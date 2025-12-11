@@ -18,7 +18,7 @@ export default class NoteHistory extends BaseSchema {
       table
         .integer('user_id')
         .unsigned()
-        .notNullable()
+        .nullable()
         .references('id')
         .inTable('users')
         .onDelete('SET NULL')

@@ -8,12 +8,7 @@ export default class Companies extends BaseSchema {
       table.increments('id').primary()
       table.string('name').notNullable().unique()
       table.string('hostname').notNullable().unique()
-      table
-        .integer('creator_id')
-        .unsigned()
-        .references('id')
-        .inTable('users')
-        .onDelete('SET NULL')
+      table.integer('creator_id').unsigned().nullable()
       table.timestamp('created_at', { useTz: true }).defaultTo(this.now())
       table.timestamp('updated_at', { useTz: true }).defaultTo(this.now())
     })

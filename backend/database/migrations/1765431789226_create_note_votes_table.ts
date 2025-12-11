@@ -18,10 +18,10 @@ export default class NoteVotes extends BaseSchema {
       table
         .integer('user_id')
         .unsigned()
-        .notNullable()
+        .nullable()
         .references('id')
         .inTable('users')
-        .onDelete('CASCADE')
+        .onDelete('SET NULL')
 
       table.enum('vote_type', ['upvote', 'downvote']).notNullable()
 
