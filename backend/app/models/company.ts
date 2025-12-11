@@ -2,6 +2,7 @@ import { DateTime } from 'luxon'
 import { BaseModel, column, hasMany } from '@adonisjs/lucid/orm'
 import type { HasMany } from '@adonisjs/lucid/types/relations'
 import User from './user.js'
+import Workspace from './workspace.js'
 
 export default class Company extends BaseModel {
   @column({ isPrimary: true })
@@ -24,4 +25,8 @@ export default class Company extends BaseModel {
   // Company has many users
   @hasMany(() => User)
   declare users: HasMany<typeof User>
+
+  // Company has many workspaces
+  @hasMany(() => Workspace)
+  declare workspaces: HasMany<typeof Workspace>
 }
