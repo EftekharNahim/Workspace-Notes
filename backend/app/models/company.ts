@@ -1,6 +1,6 @@
 import { DateTime } from 'luxon'
-import { BaseModel, column, hasMany,belongsTo } from '@adonisjs/lucid/orm'
-import type { HasMany,BelongsTo } from '@adonisjs/lucid/types/relations'
+import { BaseModel, column, hasMany, belongsTo } from '@adonisjs/lucid/orm'
+import type { HasMany, BelongsTo } from '@adonisjs/lucid/types/relations'
 import User from './user.js'
 import Workspace from './workspace.js'
 
@@ -13,6 +13,10 @@ export default class Company extends BaseModel {
 
   @column()
   declare hostname: string
+
+  @column()
+  declare creatorId: number
+
 
   @column.dateTime({ autoCreate: true })
   declare createdAt: DateTime
