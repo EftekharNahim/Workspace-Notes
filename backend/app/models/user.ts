@@ -22,7 +22,7 @@ export default class User extends compose(  BaseModel, AuthFinder ) {
   declare id: number
 
   @column()
-  declare companyId: number
+  declare companyId?: number
 
   @column()
   declare username: string
