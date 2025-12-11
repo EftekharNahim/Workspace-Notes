@@ -16,6 +16,7 @@ export default class Users extends BaseSchema {
       table.string('username').notNullable()
       table.string('email', 254).notNullable().unique()
       table.string('password').notNullable()  // <--- using password
+      table.enum('role', ['owner', 'member']).defaultTo('member')
 
       table.timestamp('created_at', { useTz: true }).defaultTo(this.now())
       table.timestamp('updated_at', { useTz: true }).defaultTo(this.now())

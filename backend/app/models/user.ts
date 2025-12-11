@@ -33,6 +33,9 @@ export default class User extends compose(  BaseModel, AuthFinder ) {
   @column()
   declare password: string
 
+  @column()
+  declare role: 'owner' | 'member' 
+
   @column.dateTime({ autoCreate: true })
   declare createdAt: DateTime
 
@@ -56,5 +59,9 @@ export default class User extends compose(  BaseModel, AuthFinder ) {
   // User has many note votes
   @hasMany(() => NoteVote)
   declare votes: HasMany<typeof NoteVote>
+
+  // If user is a creator of a company
+  @hasMany(() => Company, { foreignKey: 'creatorId' })
+  declare createdCompanies: HasMany<typeof Company>
 
 }

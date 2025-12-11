@@ -1,6 +1,6 @@
 import { DateTime } from 'luxon'
-import { BaseModel, column, hasMany } from '@adonisjs/lucid/orm'
-import type { HasMany } from '@adonisjs/lucid/types/relations'
+import { BaseModel, column, hasMany,belongsTo } from '@adonisjs/lucid/orm'
+import type { HasMany,BelongsTo } from '@adonisjs/lucid/types/relations'
 import User from './user.js'
 import Workspace from './workspace.js'
 
@@ -29,4 +29,8 @@ export default class Company extends BaseModel {
   // Company has many workspaces
   @hasMany(() => Workspace)
   declare workspaces: HasMany<typeof Workspace>
+
+  // Company creator (owner)
+  @belongsTo(() => User, { foreignKey: 'creatorId' })
+  declare creator: BelongsTo<typeof User>
 }
