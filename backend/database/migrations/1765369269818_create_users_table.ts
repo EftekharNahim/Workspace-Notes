@@ -8,7 +8,7 @@ export default class Users extends BaseSchema {
       table.increments('id').primary()
       table.integer('company_id')
         .unsigned()
-        .notNullable()  // company is assigned later
+        .nullable()  // company is assigned later
         .references('id')
         .inTable('companies')
         .onDelete('CASCADE')

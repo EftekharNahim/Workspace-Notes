@@ -7,6 +7,5 @@
 |
 */
 
-import router from '@adonisjs/core/services/router'
 
-
+import '../app/controllers/companies/company.routes.js'
