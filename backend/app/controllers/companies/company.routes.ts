@@ -6,4 +6,5 @@ const CompanyController = () => import('./company.controller.js')
 
 // Public route for creating a company
 router.post('/companies', [CompanyController, 'store'])
+router
   

@@ -4,6 +4,7 @@ import Company from '../models/company.js'
 export default class TenantMiddleware {
   public async handle(ctx: HttpContext, next: () => Promise<void>) {
     const hostname = ctx.request.hostname()
+    console.log("Hostname received:", ctx.request.hostname())
 
     if (!hostname) {
       return ctx.response.badRequest({ message: 'Hostname not found' })
@@ -15,7 +16,8 @@ export default class TenantMiddleware {
     }
 
     // Ignore TypeScript error
-    (ctx as any) = { company }
+    (ctx as any).company = company
+
 
     await next()
   }
