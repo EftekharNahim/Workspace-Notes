@@ -12,4 +12,4 @@ router
     router.delete('/:id', [WorkspaceController, 'delete'])
   })
   .prefix('/workspaces')
-  .middleware([middleware.tenant()])  // Apply TenantMiddleware
+  .middleware([middleware.tenant(),middleware.auth()])  // Apply TenantMiddleware
