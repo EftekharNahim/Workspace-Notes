@@ -11,7 +11,7 @@ export const createCompanySchema = vine.compile(
       .string()
       .minLength(1)
       .maxLength(255)
-      .regex(/^[a-z0-9\-]+$/) // only lowercase letters, numbers, and hyphens
+      .regex(/^(localhost(:[0-9]+)?|[a-z0-9\-]+)$/) // only lowercase letters, numbers, and hyphens
       .unique(async (db, value) => {
         const existing = await db.from('companies').where('hostname', value).first()
         return !existing

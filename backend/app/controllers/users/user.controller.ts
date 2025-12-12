@@ -17,7 +17,7 @@ export default class UserController {
 
     // Pass companyId to the service
     const user = await this.service.register({ ...payload, companyId: company.id })
-
+    console.log('User registered:-------------------------------', user)
     return response.created({
       message: 'User registered successfully',
       user,
