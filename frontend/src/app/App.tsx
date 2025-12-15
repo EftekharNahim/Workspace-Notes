@@ -1,14 +1,17 @@
-import { createBrowserRouter } from 'react-router'
+import { RouterProvider, createBrowserRouter } from 'react-router-dom'
+import { AuthProvider } from '../context/AuthContext'
+import { CompanyProvider } from '../context/CompanyContext'
+
 import AppLayout from '../components/layout/AppLayout'
 import AuthLayout from '../components/layout/AuthLayout'
 
 import Login from '../auth/Login'
-import Register from '@/auth/Register'
-import CreateCompany from '@/company/CreateCompany'
-import WorkspaceList from '@/workspace/WorkspaceList'
-import NoteList from '@/notes/NoteList'
-import NoteEditor from '@/notes/NoteEditor'
-import NoteView from '@/notes/NoteView'
+import Register from '../auth/Register'
+import CreateCompany from '../company/CreateCompany'
+import WorkspaceList from '../workspace/WorkspaceList'
+import NoteList from '../notes/NoteList'
+import NoteEditor from '../notes/NoteEditor'
+import NoteView from '../notes/NoteView'
 
 export const router = createBrowserRouter([
   {
@@ -32,3 +35,14 @@ export const router = createBrowserRouter([
     ],
   },
 ])
+
+
+export default function AppContainer() {
+  return (
+    <AuthProvider>
+      <CompanyProvider>
+        <RouterProvider router={router} />
+      </CompanyProvider>
+    </AuthProvider>
+  )
+}
