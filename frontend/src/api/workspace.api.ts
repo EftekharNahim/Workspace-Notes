@@ -5,7 +5,7 @@ export const workspaceApi = {
     return api.get('/workspaces')
   },
 
-  create(data: { name: string; hostname?: string }) {
+  create(data: { name: string }) {
     return api.post('/workspaces', data)
   },
 
