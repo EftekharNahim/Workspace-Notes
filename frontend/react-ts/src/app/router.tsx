@@ -1,8 +1,8 @@
 import { createBrowserRouter } from 'react-router'
-import AppLayout from '@/components/layout/AppLayout'
-import AuthLayout from '@/components/layout/AuthLayout'
+import AppLayout from '../components/layout/AppLayout'
+import AuthLayout from '../components/layout/AuthLayout'
 
-import Login from '@/auth/Login'
+import Login from '../auth/Login'
 import Register from '@/auth/Register'
 import CreateCompany from '@/company/CreateCompany'
 import WorkspaceList from '@/workspace/WorkspaceList'
