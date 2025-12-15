@@ -9,7 +9,6 @@ export default class NoteController {
   public async create({ request, response, auth }: HttpContext) {
     try {
       const payload = await request.validateUsing(createNoteSchema)
-      const company = (request as any).company
       const user = auth.user!
       // ensure workspace belongs to company
       // controller-level check:
@@ -85,7 +84,7 @@ export default class NoteController {
   }
 
   // GET /notes/:id
-  public async show({ request, response, params, auth }: HttpContext) {
+  public async show({ request, response, params}: HttpContext) {
     try {
       const company = (request as any).company
       const requesterCompanyId = company ? company.id : undefined

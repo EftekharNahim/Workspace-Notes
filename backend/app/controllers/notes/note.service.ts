@@ -94,7 +94,7 @@ export default class NoteService {
               if (payload.status === 'published') note.publishedAt = DateTime.now()
           }
 
-          await note.save({client: trx})
+          await note.useTransaction(trx).save()
 
       // Update tags: simple approach - delete existing pivot then recreate
       if (payload.tags) {
@@ -219,30 +219,45 @@ export default class NoteService {
 
       if (!existing) {
         await NoteVote.create({ noteId, userId, voteType }, { client: trx })
-        if (voteType === 'upvote') await note.increment('upvotes_count', 1, { client: trx })
-        else await note.increment('downvotes_count', 1, { client: trx })
+        if (voteType === 'upvote') note.upvotesCount += 1
+        else note.downvotesCount += 1
       } else if (existing.voteType === voteType) {
         // removing the same vote (toggle)
-        await existing.delete({ client: trx })
-        if (voteType === 'upvote') await note.increment('upvotes_count', -1, { client: trx })
-        else await note.increment('downvotes_count', -1, { client: trx })
+        await existing.delete()
+        if (voteType === 'upvote') note.upvotesCount -= 1
+        else note.downvotesCount -= 1
       } else {
         // switch vote
-        await existing.merge({ voteType }).save({ client: trx })
+        existing.merge({ voteType })
+        await existing.useTransaction(trx).save()
         if (voteType === 'upvote') {
-          await note.increment('upvotes_count', 1, { client: trx })
-          await note.increment('downvotes_count', -1, { client: trx })
+          note.upvotesCount += 1
+          note.downvotesCount -= 1
         } else {
-          await note.increment('downvotes_count', 1, { client: trx })
-          await note.increment('upvotes_count', -1, { client: trx })
+          note.downvotesCount += 1
+          note.upvotesCount -= 1
         }
       }
+      await note.useTransaction(trx).save()
 
       await trx.commit()
+      return note
       return note
     } catch (error) {
       await trx.rollback()
       throw error
     }
+  }
+
+  public async delete(noteId: number, companyId: number) {
+    const note = await Note.findOrFail(noteId)
+
+    // Ensure workspace belongs to company (defense)
+    const workspace = await Workspace.findOrFail(note.workspaceId)
+    if (workspace.companyId !== companyId) {
+      throw new Error('Unauthorized')
+    }
+
+    await note.delete()
   }
 }

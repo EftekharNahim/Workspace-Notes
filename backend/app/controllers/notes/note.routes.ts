@@ -16,7 +16,7 @@ router
 
   })
   .prefix('/notes')
-  .middleware([middleware.tenant, middleware.auth()])
+  .middleware([middleware.tenant(), middleware.auth()])
 
 // Public directory (no auth required)
 router.get('/public', [NoteController, 'listPublic'])
