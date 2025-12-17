@@ -18,7 +18,7 @@ export default function CreateCompany() {
   const submit = async () => {
     try {
       await api.post('/companies', form)
-      alert('Company created. Use hostname to login.')
+      alert('Company created. Use owner credentials to login.')
       navigate('/login')
     } catch (err: any) {
       alert(err.response?.data?.message)

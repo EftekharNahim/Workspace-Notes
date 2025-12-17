@@ -1,6 +1,7 @@
 import { api } from './axios'
 
 export const authApi = {
+
   register(data: { username: string; email: string; password: string }) {
     return api.post('/register', data)
   },
@@ -15,5 +16,6 @@ export const authApi = {
 
   logout() {
     return api.post('/logout')
+    
   },
 }

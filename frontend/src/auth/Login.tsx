@@ -9,7 +9,7 @@ export default function Login() {
 
   const submit = async () => {
     await login(form)
-    navigate('/workspaces')
+    navigate('/notes-app')
   }
 
   return (
