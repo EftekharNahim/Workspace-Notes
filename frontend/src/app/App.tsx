@@ -36,7 +36,7 @@ export const router = createBrowserRouter([
       { path: '/workspaces/:id/notes', element: <NoteList /> },
       { path: '/notes/:id', element: <NoteView /> },
       { path: '/notes/:id/edit', element: <NoteEditor /> },
-      { path: '/notes/new', element: <NoteCreate workspaceId={0} /> },
+      { path: '/workspaces/:id/notes/create', element: <NoteCreate /> },
     ],
   },
 ])

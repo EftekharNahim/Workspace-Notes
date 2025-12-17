@@ -3,17 +3,18 @@ import NoteService from './note.service.js'
 import { createNoteSchema, updateNoteSchema, voteSchema } from './note.validator.js'
 
 export default class NoteController {
-  constructor(private service = new NoteService()) {}
+  constructor(private service = new NoteService()) { }
 
   // POST /notes  (tenant + auth)
   public async create({ request, response, auth }: HttpContext) {
     try {
       const payload = await request.validateUsing(createNoteSchema)
       const user = auth.user!
+      const company = (request as any).company
       // ensure workspace belongs to company
       // controller-level check:
       // (workspace ownership check will also run in service)
-      const workspaceId = payload.workspaceId
+      //const workspaceId = payload.workspaceId
       // create note
       const note = await this.service.create({
         title: payload.title,
@@ -21,9 +22,11 @@ export default class NoteController {
         tags: payload.tags || [],
         type: payload.type,
         status: payload.status,
-        workspaceId,
+        workspaceId: payload.workspaceId,
         authorId: user.id,
-      })
+      },
+        { id: company.id, hostname: company.hostname }
+      )
       return response.created({ message: 'Note created', note })
     } catch (error) {
       return response.badRequest({ message: 'Create failed', error: error.message || error })
@@ -36,7 +39,10 @@ export default class NoteController {
       const payload = await request.validateUsing(updateNoteSchema)
       const user = auth.user!
       const company = (request as any).company
-      const note = await this.service.update(Number(params.id), payload, user.id, company.id)
+      const note = await this.service.update(params.id, payload, user.id, {
+        id: company.id,
+        hostname: company.hostname,
+      })
       return response.ok({ message: 'Note updated', note })
     } catch (error) {
       return response.badRequest({ message: 'Update failed', error: error.message || error })
@@ -84,7 +90,7 @@ export default class NoteController {
   }
 
   // GET /notes/:id
-  public async show({ request, response, params}: HttpContext) {
+  public async show({ request, response, params }: HttpContext) {
     try {
       const company = (request as any).company
       const requesterCompanyId = company ? company.id : undefined

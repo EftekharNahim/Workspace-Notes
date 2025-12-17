@@ -2,7 +2,6 @@ import { useState } from "react";
 import { noteApi } from "../api/note.api";
 import { useWorkspace } from "../context/WorkspaceContext";
 type Props = {
-  workspaceId: number;
   onCreated?: () => void;
 };
 
@@ -23,7 +22,7 @@ export default function NoteCreate({ onCreated }: Props) {
     await noteApi.create({
       title: form.title,
       content: form.content,
-      workspaceId,
+      workspaceId:workspaceId,
       type: form.type,
       status: form.status,
       tags: form.tags

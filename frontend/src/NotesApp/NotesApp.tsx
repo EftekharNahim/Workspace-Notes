@@ -6,14 +6,10 @@ import {
   ThumbsDown,
   Edit2,
   Trash2,
-  X,
-  Save,
 } from "lucide-react";
 import { api } from "../api/axios";
 import { useNavigate } from "react-router-dom";
-import { useWorkspace } from "../context/WorkspaceContext";
 
-type Workspace = { id: number; name: string };
 type Note = {
   id: number;
   title: string;
@@ -32,7 +28,6 @@ export default function NotesApp() {
   const [view, setView] = useState<
     "workspace" | "public" | "private" | "create" | "edit"
   >("public");
-  const [workspaces, setWorkspaces] = useState<Workspace[]>([]);
   const [selectedWorkspace, setSelectedWorkspace] = useState<number | null>(
     null
   );
@@ -41,7 +36,6 @@ export default function NotesApp() {
   const [editingNote, setEditingNote] = useState<Note | null>(null);
   const [search, setSearch] = useState("");
   const navigate = useNavigate();
-  const { setWorkspaceId,setWorkspaceName } = useWorkspace();
   const [form, setForm] = useState({
     title: "",
     content: "",
@@ -51,17 +45,12 @@ export default function NotesApp() {
   });
   /* ---------------- INIT ---------------- */
   useEffect(() => {
-    loadWorkspaces();
     loadPublicNotes();
   }, []);
 
   /* ---------------- API ---------------- */
 
-  const loadWorkspaces = async () => {
-    const res = await api.get("/workspaces");
-    setWorkspaces(res.data);
-    if (res.data.length) setSelectedWorkspace(res.data[0].id);
-  };
+
 
   const loadPublicNotes = async () => {
     const res = await api.get("/notes/public", {
@@ -131,16 +120,6 @@ export default function NotesApp() {
     setView("edit");
   };
 
-  const handleCreateNote = async (n:any) => {
-    try {
-      setWorkspaceId(n.id);
-      setWorkspaceName(n.name);
-      navigate("/notes/new");
-    } catch (error) {
-      console.error("Failed to create note:", error);
-    }
-  };
-
   /* ---------------- UI ---------------- */
 
   return (
@@ -154,14 +133,11 @@ export default function NotesApp() {
           <button
             onClick={() => {
               setView("workspace");
-              loadWorkspaces;
+              navigate("/workspaces") 
             }}
             className="btn"
           >
             Workspace
-          </button>
-          <button onClick={() => setView("create")} className="btn-primary">
-            <Plus size={16} /> New
           </button>
         </div>
       </header>
@@ -201,18 +177,7 @@ export default function NotesApp() {
             </div>
           ))}
 
-        {/* WORKSPACE */}
-        {view === "workspace" &&
-          workspaces.map((n) => (
-            <div key={n.id} className="card">
-              <h3 className="text-lg font-semibold">{n.name}</h3>
-              <div className="flex gap-2">
-                <button onClick={() => handleCreateNote(n)}>
-                  Create Note
-                </button>
-              </div>
-            </div>
-          ))}
+        
       </main>
     </div>
   );

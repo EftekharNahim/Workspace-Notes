@@ -20,9 +20,15 @@ export default class NoteService {
     status?: 'draft' | 'published'
     workspaceId: number
     authorId: number
-  }) {
+  },
+    company: { id: number; hostname: string }
+  ) {
     const trx = await db.transaction()
     try {
+      const workspace = await Workspace.findOrFail(payload.workspaceId)
+      if (workspace.companyId !== company.id) {
+        throw new Error('Workspace does not belong to this company')
+      }
       const note = await Note.create(
         {
           title: payload.title,
@@ -42,9 +48,9 @@ export default class NoteService {
       if (payload.tags && payload.tags.length) {
         for (const tname of payload.tags) {
           // find or create tag (global)
-          let tag = await Tag.query({ client: trx }).where('name', tname).first()
+          let tag = await Tag.query({ client: trx }).where('name', tname).andWhere('hostname', company.hostname).first()
           if (!tag) {
-            tag = await Tag.create({ name: tname }, { client: trx })
+            tag = await Tag.create({ name: tname, hostname: company.hostname }, { client: trx })
           }
           await NoteTag.create({ noteId: note.id, tagId: tag.id }, { client: trx })
         }
@@ -61,48 +67,53 @@ export default class NoteService {
   /**
    * Update note: create history entry of previous content, update note and tags.
    */
-  public async update(noteId: number, payload: any, userId: number, companyId: number) {
+  public async update(
+    noteId: number,
+    payload: any,
+    userId: number,
+    company: { id: number; hostname: string }
+  ) {
     const trx = await db.transaction()
-      try {
-          const note = await Note.query({ client: trx })
-              .where('id', noteId)
-              .firstOrFail()
+    try {
+      const note = await Note.query({ client: trx })
+        .where('id', noteId)
+        .firstOrFail()
 
-          // Ensure workspace belongs to company (defense)
-          const workspace = await Workspace.findOrFail(note.workspaceId)
-          if (workspace.companyId !== companyId) {
-              throw new Error('Unauthorized')
-          }
+      // Ensure workspace belongs to company (defense)
+      const workspace = await Workspace.findOrFail(note.workspaceId)
+      if (workspace.companyId !== company.id) {
+        throw new Error('Unauthorized')
+      }
 
-          // create history (previous state)
-          await NoteHistory.create(
-              {
-                  noteId: note.id,
-                  userId,
-                  title: note.title,
-                  content: note.content,
-              },
-              { client: trx }
-          )
+      // create history (previous state)
+      await NoteHistory.create(
+        {
+          noteId: note.id,
+          userId,
+          title: note.title,
+          content: note.content,
+        },
+        { client: trx }
+      )
 
-          // Update fields
-          if (payload.title) note.title = payload.title
-          if (payload.content) note.content = payload.content
-          if (payload.type) note.type = payload.type
-          if (payload.status) {
-              note.status = payload.status
-              if (payload.status === 'published') note.publishedAt = DateTime.now()
-          }
+      // Update fields
+      if (payload.title) note.title = payload.title
+      if (payload.content) note.content = payload.content
+      if (payload.type) note.type = payload.type
+      if (payload.status) {
+        note.status = payload.status
+        if (payload.status === 'published') note.publishedAt = DateTime.now()
+      }
 
-          await note.useTransaction(trx).save()
+      await note.useTransaction(trx).save()
 
       // Update tags: simple approach - delete existing pivot then recreate
       if (payload.tags) {
         await NoteTag.query({ client: trx }).where('note_id', note.id).delete()
         for (const tname of payload.tags) {
-          let tag = await Tag.query({ client: trx }).where('name', tname).first()
+          let tag = await Tag.query({ client: trx }).where('name', tname).andWhere("hostname",company.hostname).first()
           if (!tag) {
-            tag = await Tag.create({ name: tname }, { client: trx })
+            tag = await Tag.create({ name: tname ,hostname: company.hostname}, { client: trx })
           }
           await NoteTag.create({ noteId: note.id, tagId: tag.id }, { client: trx })
         }
@@ -241,7 +252,6 @@ export default class NoteService {
       await note.useTransaction(trx).save()
 
       await trx.commit()
-      return note
       return note
     } catch (error) {
       await trx.rollback()

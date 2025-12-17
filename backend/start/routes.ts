@@ -11,4 +11,5 @@
 import '../app/controllers/companies/company.routes.js'
 import '../app/controllers/users/user.routes.js'
 import '../app/controllers/workspaces/workspace.routes.js'
+import '../app/controllers/notes/note.routes.js'
 

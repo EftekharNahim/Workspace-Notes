@@ -1,16 +1,26 @@
 import { useEffect, useState } from 'react'
 import { workspaceApi } from '../api/workspace.api'
-import { Link } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom' // Import useNavigate
 import CreateWorkspace from './CreateWorkspace'
+import { useWorkspace } from '../context/WorkspaceContext'
 
 export default function WorkspaceList() {
   const [items, setItems] = useState<any[]>([])
+  const { setWorkspaceId, setWorkspaceName } = useWorkspace();
+  const navigate = useNavigate();
 
   const load = () => {
     workspaceApi.list().then(res => setItems(res.data))
   }
 
   useEffect(load, [])
+
+  const handleWorkspaceClick = (id: any, name: string) => {
+    setWorkspaceId(id);
+    setWorkspaceName(name);
+    // Navigation happens after state is set
+    navigate(`/workspaces/${id}/notes`);
+  };
 
   return (
     <>
@@ -19,7 +29,13 @@ export default function WorkspaceList() {
 
       {items.map(w => (
         <div key={w.id}>
-          <Link to={`/workspaces/${w.id}/notes`}>{w.name}</Link>
+          {/* Use a button styled like a link or an onClick handler */}
+          <button 
+            onClick={() => handleWorkspaceClick(w.id, w.name)}
+            style={{ background: 'none', border: 'none', color: 'blue', textDecoration: 'underline', cursor: 'pointer' }}
+          >
+            {w.name}
+          </button>
         </div>
       ))}
     </>
