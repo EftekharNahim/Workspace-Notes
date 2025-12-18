@@ -17,13 +17,14 @@ export const noteApi = {
     return api.get(`/notes/workspace/${workspaceId}`)
   },
 
-  listPublic(params?: any) {
-    return api.get('/public', { params })
+  listPublic() {
+    return api.get('/notes/public')
   },
 
-  show(id: number) {
+  show(id:number) {
     return api.get(`/notes/${id}`)
   },
+
 
   vote(id: number, voteType: 'upvote' | 'downvote') {
     return api.post(`/notes/${id}/vote`, { voteType })

@@ -33,7 +33,7 @@ export const router = createBrowserRouter([
     children: [
       { path: '/notes-app', element: <NotesApp /> },
       { path: '/workspaces', element: <WorkspaceList /> },
-      { path: '/workspaces/:id/notes', element: <NoteList /> },
+      { path: '/workspaces/:workspaceId/notes', element: <NoteList /> },
       { path: '/notes/:id', element: <NoteView /> },
       { path: '/notes/:id/edit', element: <NoteEditor /> },
       { path: '/workspaces/:id/notes/create', element: <NoteCreate /> },

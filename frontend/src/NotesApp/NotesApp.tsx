@@ -1,184 +1,130 @@
-import { useEffect, useState } from "react";
-import {
-  Plus,
-  Search,
-  ThumbsUp,
-  ThumbsDown,
-  Edit2,
-  Trash2,
-} from "lucide-react";
-import { api } from "../api/axios";
-import { useNavigate } from "react-router-dom";
+import { useEffect, useState } from "react"
+import { ThumbsUp, ThumbsDown, Search } from "lucide-react"
+import { api } from "../api/axios"
+import { useNavigate } from "react-router-dom"
 
 type Note = {
-  id: number;
-  title: string;
-  content: string;
-  tags: { name: string }[];
-  workspaceId: number;
-  upvotesCount: number;
-  downvotesCount: number;
-  status: "draft" | "published";
-  type: "public" | "private";
-  createdAt: string;
-  updatedAt: string;
-};
+  id: number
+  title: string
+  content: string
+  tags: { name: string }[]
+  upvotesCount: number
+  downvotesCount: number
+  workspace?: { name: string }
+}
 
 export default function NotesApp() {
-  const [view, setView] = useState<
-    "workspace" | "public" | "private" | "create" | "edit"
-  >("public");
-  const [selectedWorkspace, setSelectedWorkspace] = useState<number | null>(
-    null
-  );
-  const [publicNotes, setPublicNotes] = useState<Note[]>([]);
-  const [privateNotes, setPrivateNotes] = useState<Note[]>([]);
-  const [editingNote, setEditingNote] = useState<Note | null>(null);
-  const [search, setSearch] = useState("");
-  const navigate = useNavigate();
-  const [form, setForm] = useState({
-    title: "",
-    content: "",
-    tags: "",
-    type: "private" as "private" | "public",
-    status: "draft" as "draft" | "published",
-  });
-  /* ---------------- INIT ---------------- */
+  const [notes, setNotes] = useState<Note[]>([])
+  const [search, setSearch] = useState("")
+  const [loading, setLoading] = useState(false)
+  const navigate = useNavigate()
+
+  /* ---------------- LOAD PUBLIC NOTES ---------------- */
+  const loadNotes = async (query = "") => {
+    setLoading(true)
+    try {
+      const res = await api.get("/notes/public", { params: { q: query } })
+      setNotes(res.data.data || res.data)
+    } catch (err) {
+      console.error("Error loading notes:", err)
+      setNotes([])
+    } finally {
+      setLoading(false)
+    }
+  }
+
   useEffect(() => {
-    loadPublicNotes();
-  }, []);
+    loadNotes(search)
+  }, [search])
 
-  /* ---------------- API ---------------- */
-
-
-
-  const loadPublicNotes = async () => {
-    const res = await api.get("/notes/public", {
-      params: { q: search },
-    });
-    setPublicNotes(res.data.data || res.data);
-  };
-
-  const loadPrivateNotes = async () => {
-    if (!selectedWorkspace) return;
-    const res = await api.get(`/notes/workspace/${selectedWorkspace}`, {
-      params: { q: search },
-    });
-    setPrivateNotes(res.data.data || res.data);
-  };
-
-  const updateNote = async () => {
-    if (!editingNote) return;
-    await api.put(`/notes/${editingNote.id}`, {
-      title: form.title,
-      content: form.content,
-      tags: form.tags
-        .split(",")
-        .map((t) => t.trim())
-        .filter(Boolean),
-      type: form.type,
-      status: form.status,
-    });
-    reset();
-    loadPrivateNotes();
-    setView("private");
-  };
-
-  const deleteNote = async (id: number) => {
-    if (!confirm("Delete this note?")) return;
-    await api.delete(`/notes/${id}`);
-    loadPrivateNotes();
-  };
-
+  /* ---------------- VOTE ---------------- */
   const vote = async (id: number, voteType: "upvote" | "downvote") => {
-    await api.post(`/notes/${id}/vote`, { voteType });
-    loadPublicNotes();
-  };
-
-  /* ---------------- HELPERS ---------------- */
-
-  const reset = () => {
-    setEditingNote(null);
-    setForm({
-      title: "",
-      content: "",
-      tags: "",
-      type: "private",
-      status: "draft",
-    });
-  };
-
-  const startEdit = (note: Note) => {
-    setEditingNote(note);
-    setForm({
-      title: note.title,
-      content: note.content,
-      tags: note.tags.map((t) => t.name).join(", "),
-      type: note.type,
-      status: note.status,
-    });
-    setView("edit");
-  };
-
-  /* ---------------- UI ---------------- */
+    await api.post(`/notes/${id}/vote`, { voteType })
+    loadNotes(search)
+  }
 
   return (
     <div className="min-h-screen bg-gray-100">
-      <header className="bg-white border-b px-6 py-4 flex justify-between">
-        <h1 className="text-xl font-bold">NotesApp</h1>
-        <div className="flex gap-2">
-          <button onClick={() => setView("public")} className="btn">
-            Public
-          </button>
+      <header className="bg-white border-b px-6 py-4 flex justify-between items-center">
+        <h1 className="text-xl font-bold">Public Notes</h1>
+
+        <div className="flex items-center gap-2">
           <button
-            onClick={() => {
-              setView("workspace");
-              navigate("/workspaces") 
-            }}
-            className="btn"
+            onClick={() => navigate("/workspaces")}
+            className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 transition"
           >
-            Workspace
+            Workspaces
           </button>
+
+          <Search size={18} />
+          <input
+            type="text"
+            placeholder="Search notes..."
+            className="border px-2 py-1 rounded"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
         </div>
       </header>
 
-      <main className="max-w-5xl mx-auto p-6">
-        {/* PUBLIC */}
-        {view === "public" &&
-          publicNotes.map((n) => (
-            <div key={n.id} className="card">
-              <h3 className="text-lg font-semibold">{n.title}</h3>
-              <p>{n.content}</p>
-              <div className="flex gap-2 mt-2">
-                <button onClick={() => vote(n.id, "upvote")} className="vote">
-                  <ThumbsUp size={14} /> {n.upvotesCount}
-                </button>
-                <button onClick={() => vote(n.id, "downvote")} className="vote">
-                  <ThumbsDown size={14} /> {n.downvotesCount}
-                </button>
-              </div>
-            </div>
-          ))}
+      <main className="max-w-5xl mx-auto p-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {loading && <p>Loading notes...</p>}
+        {!loading && notes.length === 0 && (
+          <p className="text-gray-500 col-span-full">No notes found.</p>
+        )}
 
-        {/* PRIVATE */}
-        {view === "private" &&
-          privateNotes.map((n) => (
-            <div key={n.id} className="card">
-              <h3 className="text-lg font-semibold">{n.title}</h3>
-              <p>{n.content}</p>
-              <div className="flex gap-2">
-                <button onClick={() => startEdit(n)}>
-                  <Edit2 size={16} />
-                </button>
-                <button onClick={() => deleteNote(n.id)}>
-                  <Trash2 size={16} />
-                </button>
-              </div>
-            </div>
-          ))}
+        {notes.map((note) => (
+          <div
+            key={note.id}
+            className="bg-white shadow p-4 rounded cursor-pointer hover:shadow-lg transition"
+            onClick={() => navigate(`/notes/${note.id}`)}
+          >
+            <h3 className="text-lg font-semibold">{note.title}</h3>
+            <p className="text-gray-700 mt-1 line-clamp-3">{note.content}</p>
 
-        
+            {/* Tags */}
+            <div className="mt-2 flex flex-wrap gap-1">
+              {note.tags?.map((t) => (
+                <span
+                  key={t.name}
+                  className="text-xs bg-gray-200 px-2 py-1 rounded"
+                >
+                  {t.name}
+                </span>
+              ))}
+            </div>
+
+            {/* Votes */}
+            <div className="mt-3 flex gap-2">
+              <button
+                onClick={(e) => {
+                  e.stopPropagation()
+                  vote(note.id, "upvote")
+                }}
+                className="flex items-center gap-1 px-2 py-1 bg-green-100 rounded text-sm"
+              >
+                <ThumbsUp size={14} /> {note.upvotesCount || 0}
+              </button>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation()
+                  vote(note.id, "downvote")
+                }}
+                className="flex items-center gap-1 px-2 py-1 bg-red-100 rounded text-sm"
+              >
+                <ThumbsDown size={14} /> {note.downvotesCount || 0}
+              </button>
+            </div>
+
+            {/* Workspace info */}
+            {note.workspace?.name && (
+              <div className="mt-2 text-xs text-gray-500">
+                Workspace: {note.workspace.name}
+              </div>
+            )}
+          </div>
+        ))}
       </main>
     </div>
-  );
+  )
 }

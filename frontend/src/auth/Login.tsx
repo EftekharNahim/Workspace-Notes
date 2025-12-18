@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useAuth } from '../hooks/useAuth'
-import { useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 
 export default function Login() {
   const { login } = useAuth()
@@ -13,6 +13,7 @@ export default function Login() {
   }
 
   return (
+    <>
     <div className="form">
       <h2>Login</h2>
 
@@ -28,6 +29,8 @@ export default function Login() {
       />
 
       <button onClick={submit}>Login</button>
-    </div>
+      </div>
+      <h3>Not yet register? <Link to='/register'>Register now</Link></h3>
+    </>
   )
 }

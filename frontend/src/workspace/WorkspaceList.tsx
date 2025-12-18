@@ -24,7 +24,10 @@ export default function WorkspaceList() {
 
   return (
     <>
-      <h2>Workspaces</h2>
+      <div className="flex justify-between items-center mb-4">
+        <h2>Workspaces</h2>
+        <button onClick={()=>navigate('/notes-app')}>Dashboard</button>
+      </div>
       <CreateWorkspace onCreated={load} />
 
       {items.map(w => (

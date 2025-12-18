@@ -16,8 +16,13 @@ router
 
   })
   .prefix('/notes')
-  .middleware([middleware.tenant(), middleware.auth()])
+  .middleware([middleware.tenant(), middleware.auth()])  // Apply TenantMiddleware + AuthMiddleware (optional for public notes)
 
 // Public directory (no auth required)
-router.get('/public', [NoteController, 'listPublic'])
-router.get('/:id', [NoteController, 'show']) // public note view (if public or owner)
+router
+  .group(() => {
+    router.get('/public', [NoteController, 'listPublic'])
+    router.get('/:id', [NoteController, 'show'])
+  })
+  .prefix('/notes')
+  .middleware([middleware.tenant()])  // Apply TenantMiddleware
