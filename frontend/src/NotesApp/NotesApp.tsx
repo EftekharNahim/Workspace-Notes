@@ -2,7 +2,7 @@ import { useEffect, useState } from "react"
 import { ThumbsUp, ThumbsDown, Search } from "lucide-react"
 import { api } from "../api/axios"
 import { useNavigate } from "react-router-dom"
-
+import { useAuth } from "../hooks/useAuth"
 type Note = {
   id: number
   title: string
@@ -18,6 +18,7 @@ export default function NotesApp() {
   const [search, setSearch] = useState("")
   const [loading, setLoading] = useState(false)
   const navigate = useNavigate()
+  const { user } = useAuth()
 
   /* ---------------- LOAD PUBLIC NOTES ---------------- */
   const loadNotes = async (query = "") => {
@@ -42,7 +43,11 @@ export default function NotesApp() {
     await api.post(`/notes/${id}/vote`, { voteType })
     loadNotes(search)
   }
-
+  if (!user) return (
+    <div>
+      <h2 className="text-center mt-20 text-2xl font-semibold">Please login to view notes.</h2>
+    </div>
+  )
   return (
     <div className="min-h-screen bg-gray-100">
       <header className="bg-white border-b px-6 py-4 flex justify-between items-center">
