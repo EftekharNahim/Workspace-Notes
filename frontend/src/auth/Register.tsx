@@ -118,6 +118,12 @@ export default function Register() {
           Login now
         </Link>
       </h1>
+      <h1>
+        Want to create a company?{" "}
+        <Link to={"/"} className="text-blue-500 underline">
+          Create Company
+        </Link>
+      </h1>
     </div>
   );
 }
