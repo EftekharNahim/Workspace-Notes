@@ -1,6 +1,8 @@
 import type { HttpContext } from '@adonisjs/core/http'
 import NoteService from './note.service.js'
 import { createNoteSchema, updateNoteSchema, voteSchema } from './note.validator.js'
+import Workspace from '../../models/workspace.js'
+import Note from '#models/note'
 
 export default class NoteController {
   constructor(private service = new NoteService()) { }
@@ -16,6 +18,16 @@ export default class NoteController {
       // (workspace ownership check will also run in service)
       //const workspaceId = payload.workspaceId
       // create note
+      // ✅ ADD THIS BLOCK
+      const workspace = await Workspace
+        .query()
+        .where('id', payload.workspaceId)
+        .andWhere('company_id', company.id)
+        .first()
+
+      if (!workspace) {
+        return response.badRequest({ message: 'Invalid workspace' })
+      }
       const note = await this.service.create({
         title: payload.title,
         content: payload.content,
@@ -39,7 +51,7 @@ export default class NoteController {
       const payload = await request.validateUsing(updateNoteSchema)
       const user = auth.user!
       const company = (request as any).company
-      const note = await this.service.update(params.id, payload, user.id, {
+      const note = await this.service.update(Number(params.id), payload, user.id, {
         id: company.id,
         hostname: company.hostname,
       })
