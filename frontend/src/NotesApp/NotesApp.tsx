@@ -1,8 +1,10 @@
-import { useEffect, useState } from "react"
+import { useEffect, useState, useCallback } from "react"
 import { ThumbsUp, ThumbsDown, Search } from "lucide-react"
 import { api } from "../api/axios"
 import { useNavigate } from "react-router-dom"
 import { useAuth } from "../hooks/useAuth"
+
+type RawNote = any
 type Note = {
   id: number
   title: string
@@ -17,37 +19,100 @@ export default function NotesApp() {
   const [notes, setNotes] = useState<Note[]>([])
   const [search, setSearch] = useState("")
   const [loading, setLoading] = useState(false)
+  const [page, setPage] = useState<number>(1)
+  const [limit, setLimit] = useState<number>(12)
+  const [meta, setMeta] = useState<any | null>(null)
   const navigate = useNavigate()
   const { user } = useAuth()
 
-  /* ---------------- LOAD PUBLIC NOTES ---------------- */
-  const loadNotes = async (query = "") => {
-    setLoading(true)
-    try {
-      const res = await api.get("/notes/public", { params: { q: query } })
-      setNotes(res.data.data || res.data)
-    } catch (err) {
-      console.error("Error loading notes:", err)
-      setNotes([])
-    } finally {
-      setLoading(false)
+  // Normalize server note -> frontend Note
+  const normalize = (raw: RawNote): Note => {
+    return {
+      id: raw.id,
+      title: raw.title,
+      content: raw.content,
+      // tags might be an array of tag objects or strings
+      tags: Array.isArray(raw.tags)
+        ? raw.tags.map((t: any) => ({ name: t.name ?? t }))
+        : [],
+      // server may return snake_case or camelCase
+      upvotesCount:
+        raw.upvotes_count ?? raw.upvotesCount ?? raw.upvotes ?? 0,
+      downvotesCount:
+        raw.downvotes_count ?? raw.downvotesCount ?? raw.downvotes ?? 0,
+      workspace: raw.workspace
+        ? { name: raw.workspace.name ?? raw.workspace.title ?? "" }
+        : undefined,
     }
   }
 
+  const loadNotes = useCallback(
+    async (p = page, lim = limit, query = search) => {
+      setLoading(true)
+      try {
+        const res = await api.get("/notes/public", {
+          params: { page: p, limit: lim, q: query },
+        })
+
+        // Paginator shape from Adonis: { meta, data }
+        const responseData = res.data?.data ?? res.data
+        const responseMeta = res.data?.meta ?? null
+
+        const normalized = Array.isArray(responseData)
+          ? responseData.map(normalize)
+          : []
+
+        setNotes(normalized)
+        setMeta(responseMeta)
+      } catch (err) {
+        console.error("Error loading notes:", err)
+        setNotes([])
+        setMeta(null)
+      } finally {
+        setLoading(false)
+      }
+    },
+    [page, limit, search]
+  )
+
+  // Debounce search: trigger load 400ms after last keystroke
   useEffect(() => {
-    loadNotes(search)
+    const t = setTimeout(() => {
+      setPage(1) // reset to first when search changes
+      loadNotes(1, limit, search)
+    }, 400)
+    return () => clearTimeout(t)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [search])
 
-  /* ---------------- VOTE ---------------- */
+  // Load when page or limit change
+  useEffect(() => {
+    loadNotes(page, limit, search)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [page, limit])
+
   const vote = async (id: number, voteType: "upvote" | "downvote") => {
-    await api.post(`/notes/${id}/vote`, { voteType })
-    loadNotes(search)
+    try {
+      await api.post(`/notes/${id}/vote`, { voteType })
+      // refresh current page
+      loadNotes(page, limit, search)
+    } catch (err) {
+      console.error("Vote failed", err)
+    }
   }
-  if (!user) return (
-    <div>
-      <h2 className="text-center mt-20 text-2xl font-semibold">Please login to view notes.</h2>
-    </div>
-  )
+
+  if (!user)
+    return (
+      <div>
+        <h2 className="text-center mt-20 text-2xl font-semibold">
+          Please login to view notes.
+        </h2>
+      </div>
+    )
+
+  const currentPage = meta?.current_page ?? meta?.currentPage ?? page
+  const lastPage = meta?.last_page ?? meta?.lastPage ?? null
+
   return (
     <div className="min-h-screen bg-gray-100">
       <header className="bg-white border-b px-6 py-4 flex justify-between items-center">
@@ -87,7 +152,6 @@ export default function NotesApp() {
             <h3 className="text-lg font-semibold">{note.title}</h3>
             <p className="text-gray-700 mt-1 line-clamp-3">{note.content}</p>
 
-            {/* Tags */}
             <div className="mt-2 flex flex-wrap gap-1">
               {note.tags?.map((t) => (
                 <span
@@ -99,7 +163,6 @@ export default function NotesApp() {
               ))}
             </div>
 
-            {/* Votes */}
             <div className="mt-3 flex gap-2">
               <button
                 onClick={(e) => {
@@ -121,7 +184,6 @@ export default function NotesApp() {
               </button>
             </div>
 
-            {/* Workspace info */}
             {note.workspace?.name && (
               <div className="mt-2 text-xs text-gray-500">
                 Workspace: {note.workspace.name}
@@ -130,6 +192,47 @@ export default function NotesApp() {
           </div>
         ))}
       </main>
+
+      {/* Pagination */}
+      <div className="max-w-5xl mx-auto p-6 flex justify-between items-center">
+        <div>
+          <label className="mr-2">Per page:</label>
+          <select
+            value={limit}
+            onChange={(e) => {
+              setLimit(Number(e.target.value))
+              setPage(1)
+            }}
+            className="border px-2 py-1 rounded"
+          >
+            <option value={6}>6</option>
+            <option value={12}>12</option>
+            <option value={24}>24</option>
+          </select>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setPage((p) => Math.max(1, p - 1))}
+            disabled={currentPage <= 1}
+            className="px-3 py-1 border rounded disabled:opacity-50"
+          >
+            Prev
+          </button>
+
+          <span>
+            Page {currentPage} {lastPage ? `of ${lastPage}` : ""}
+          </span>
+
+          <button
+            onClick={() => setPage((p) => p + 1)}
+            disabled={lastPage ? currentPage >= lastPage : false}
+            className="px-3 py-1 border rounded disabled:opacity-50"
+          >
+            Next
+          </button>
+        </div>
+      </div>
     </div>
   )
 }
