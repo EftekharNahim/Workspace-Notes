@@ -1,24 +1,27 @@
 // database/seeders/DatabaseSeeder.ts
 import { BaseSeeder } from '@adonisjs/lucid/seeders'
 import Workspace from '../../app/models/workspace.js'
-import Tag from '../../app/models/tag.js'
 import { faker } from '@faker-js/faker'
 import { DateTime } from 'luxon'
 import Database from '@adonisjs/lucid/services/db'
 
 export default class DatabaseSeeder extends BaseSeeder {
   public async run() {
-    const WORKSPACE_COUNT = 1000
-    const TOTAL_NOTES = 500_000
-    const CHUNK_SIZE = 500
+    // === CONFIG ===
+    // Toggle SMALL_RUN for quick local testing
+    const SMALL_RUN = false
+
+    const WORKSPACE_COUNT = SMALL_RUN ? 5 : 1000
+    const TOTAL_NOTES = SMALL_RUN ? 200 : 500_000
+    const CHUNK_SIZE = SMALL_RUN ? 50 : 500
+
     const TAG_NAMES = [
-      'urgent', 'planning', 'idea', 'bug', 'research', 'meeting', 'todo', 
-      'design', 'backend', 'frontend'
+      'urgent', 'planning', 'idea', 'bug', 'research', 'meeting', 'todo',
+      'design', 'backend', 'frontend',
     ]
 
-    console.log('Seeder starting — be patient. This may take a while for 500k notes.')
+    console.log('Seeder starting — be patient for large runs (set SMALL_RUN = true to test quickly).')
 
-    // Helper to format dates for MySQL DATETIME
     const nowStr = () => DateTime.now().toFormat('yyyy-LL-dd HH:mm:ss')
     const formatDate = (dt: DateTime) => dt.toFormat('yyyy-LL-dd HH:mm:ss')
 
@@ -34,7 +37,6 @@ export default class DatabaseSeeder extends BaseSeeder {
       })
     }
 
-    // Insert workspaces in chunks
     const W_CHUNK = 200
     const insertedWorkspaces: any[] = []
     for (let i = 0; i < workspacesPayload.length; i += W_CHUNK) {
@@ -44,49 +46,60 @@ export default class DatabaseSeeder extends BaseSeeder {
       console.log(`Inserted ${insertedWorkspaces.length}/${WORKSPACE_COUNT} workspaces`)
     }
 
-    /* ---------------- CREATE TAGS ---------------- */
-    console.log('Creating tags...')
-    // ---------- create tags safely (include hostname & ignore duplicates) ----------
-console.log('Creating tags...')
 
-// build payload including hostname (DB requires it)
+   /* ---------------- CREATE / LOAD TAGS (robust) ---------------- */
+console.log('Creating/loading tags (robust mode)...')
+
 const hostnameValue = 'localhost'
-const tagPayload = TAG_NAMES.map((name) => ({
-  name,
-  hostname: hostnameValue,
-  created_at: nowStr(),
-  updated_at: nowStr(),
-}))
+const now = DateTime.now().toFormat('yyyy-LL-dd HH:mm:ss')
 
-// Build a multi-row INSERT with ON DUPLICATE KEY UPDATE so seeder is idempotent
-const tagCols = ['name', 'hostname', 'created_at', 'updated_at']
-const tagPlaceholders = tagPayload.map(() => `(${tagCols.map(() => '?').join(',')})`).join(',')
-const tagBindings: any[] = []
-tagPayload.forEach((t) => {
-  tagBindings.push(t.name, t.hostname, t.created_at, t.updated_at)
-})
+// 1) Load existing tags with these names (any hostname)
+const existingRows = await Database
+  .from('tags')
+  .select('id', 'name', 'hostname')
+  .whereIn('name', TAG_NAMES)
 
-// ON DUPLICATE KEY UPDATE -> no-op except refresh updated_at (safe)
-const tagSql = `
-  INSERT INTO tags (${tagCols.join(',')})
-  VALUES ${tagPlaceholders}
-  ON DUPLICATE KEY UPDATE updated_at = VALUES(updated_at)
-`
+// Map existing names for quick check
+const existingNames = new Set(existingRows.map((r: any) => r.name))
+console.log(`Found ${existingRows.length} existing tag(s):`, existingRows.map((r: any) => r.name))
 
-// Execute raw SQL using Adonis Database. Use .raw if available.
-if (typeof Database.raw === 'function') {
-  await Database.raw(tagSql, tagBindings)
-} else if (typeof Database.rawQuery === 'function') {
-  await Database.rawQuery(tagSql, tagBindings)
+// 2) Determine which tag names are missing and insert them one-by-one
+const toInsert = TAG_NAMES.filter((name) => !existingNames.has(name))
+if (toInsert.length) {
+  console.log('Inserting missing tags:', toInsert)
+  for (const name of toInsert) {
+    try {
+      // Use explicit insert (single-row) so we can catch DB error per-row
+      await Database
+        .table('tags')
+        .insert({
+          name,
+          hostname: hostnameValue, // your schema requires hostname
+          created_at: now,
+          updated_at: now,
+        })
+    } catch (err: any) {
+      // If duplicate or other error occurs, log it but continue (we'll reload below)
+      console.warn(`Insert tag "${name}" failed (maybe duplicate):`, err.message || err)
+    }
+  }
 } else {
-  // fallback to connection().raw
-  // @ts-ignore
-  await Database.connection().raw(tagSql, tagBindings)
+  console.log('No tags to insert — all tag names already exist.')
 }
 
-// Fetch tags back (id + name)
-const tags = await Database.from('tags').select('id', 'name').where('hostname', hostnameValue)
-console.log(`Created/loaded ${tags.length} tags`)
+// 3) Load tags again (only the tag names we care about)
+const tags = await Database
+  .from('tags')
+  .select('id', 'name', 'hostname')
+  .whereIn('name', TAG_NAMES)
+
+// Final verification
+if (!tags || tags.length === 0) {
+  // very explicit error so seeder aborts with readable reason
+  throw new Error('Tags table empty after attempted insert — aborting seeder')
+}
+
+console.log(`Loaded ${tags.length} tags:`, tags.map((t: any) => `${t.name}@${t.hostname}`))
 
 
     /* ---------------- CREATE NOTES ---------------- */
@@ -95,12 +108,12 @@ console.log(`Created/loaded ${tags.length} tags`)
     let remainder = TOTAL_NOTES - basePerWs * insertedWorkspaces.length
     let globalCount = 0
 
+    // helper for raw multi-row insert
     const rawExec = async (sql: string, bindings: any[]) => {
-      if (Database.rawQuery) return Database.rawQuery(sql, bindings)
-      if (Database.raw) return Database.raw(sql, bindings)
-      return Database.connection().raw(sql, bindings)
+      return Database.raw(sql, bindings)
     }
 
+    // iterate workspaces
     for (const ws of insertedWorkspaces) {
       const toCreate = basePerWs + (remainder > 0 ? 1 : 0)
       if (remainder > 0) remainder--
@@ -112,6 +125,7 @@ console.log(`Created/loaded ${tags.length} tags`)
         const end = Math.min(start + CHUNK_SIZE, toCreate)
         const rows: any[] = []
 
+        // seedPrefix to identify inserted rows for this batch
         const seedPrefix = `seed_ws${ws.id}_b${batchIndex}_${Date.now()}`
 
         for (let i = start; i < end; i++) {
@@ -137,10 +151,10 @@ console.log(`Created/loaded ${tags.length} tags`)
           })
         }
 
-        // Bulk insert notes
+        // Bulk insert notes via raw SQL
         const columns = [
-          'title','content','workspace_id','author_id','status','type',
-          'upvotes_count','downvotes_count','published_at','created_at','updated_at'
+          'title', 'content', 'workspace_id', 'author_id', 'status', 'type',
+          'upvotes_count', 'downvotes_count', 'published_at', 'created_at', 'updated_at'
         ]
         const placeholders: string[] = []
         const bindings: any[] = []
@@ -151,17 +165,18 @@ console.log(`Created/loaded ${tags.length} tags`)
         const sql = `INSERT INTO notes (${columns.join(',')}) VALUES ${placeholders.join(',')}`
         await rawExec(sql, bindings)
 
-        // Fetch inserted notes for tag assignment
+        // Fetch inserted rows for this batch using the seedPrefix marker in title
         const insertedRows = await Database
           .from('notes')
           .select('id', 'title')
           .where('workspace_id', ws.id)
           .andWhere('title', 'like', `${seedPrefix}%`)
 
+        // Build note_tags payload
         const noteTagsPayload: any[] = []
         insertedRows.forEach((noteRow: any) => {
-          const tagCount = faker.number.int({ min: 0, max: 3 })
-          const shuffled = faker.helpers.shuffle(tags)
+          const tagCount = faker.number.int({ min: 0, max: Math.min(3, tags.length) })
+          const shuffled = faker.helpers.shuffle([...tags])
           for (let t = 0; t < tagCount; t++) {
             noteTagsPayload.push({
               note_id: noteRow.id,
@@ -171,7 +186,7 @@ console.log(`Created/loaded ${tags.length} tags`)
           }
         })
 
-        // Bulk insert note_tags
+        // Bulk insert note_tags (in sub-chunks)
         if (noteTagsPayload.length) {
           for (let p = 0; p < noteTagsPayload.length; p += 500) {
             const chunk = noteTagsPayload.slice(p, p + 500)
@@ -185,8 +200,12 @@ console.log(`Created/loaded ${tags.length} tags`)
 
         globalCount += rows.length
         console.log(`Inserted ${globalCount}/${TOTAL_NOTES} notes (workspace ${ws.id} batch ${batchIndex + 1}/${batches})`)
-      }
-    }
+
+        // If in SMALL_RUN, optionally break early for speed
+        if (SMALL_RUN && globalCount >= TOTAL_NOTES) break
+      } // end batches
+      if (SMALL_RUN && globalCount >= TOTAL_NOTES) break
+    } // end workspaces loop
 
     console.log('Large seeding completed successfully!')
   }

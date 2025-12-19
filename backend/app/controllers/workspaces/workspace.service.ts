@@ -5,16 +5,19 @@ export default class WorkspaceService {
     return Workspace.create(payload)
   }
 
-  public async list(companyId: number) {
-    return Workspace.query().where('company_id', companyId)
+  public async list(companyId: number, page = 1,
+    limit = 10) {
+    return Workspace.query().where('company_id', companyId).paginate(page, limit)
   }
 
   public async update(id: number, companyId: number, payload: { name?: string }) {
     const workspace = await Workspace.query()
       .where('id', id)
       .andWhere('company_id', companyId)
-      .firstOrFail()
-
+      .first()
+    if (!workspace) {
+      throw new Error('Workspace not found')
+    }
     workspace.merge(payload)
     await workspace.save()
 
@@ -25,8 +28,10 @@ export default class WorkspaceService {
     const workspace = await Workspace.query()
       .where('id', id)
       .andWhere('company_id', companyId)
-      .firstOrFail()
-
+      .first()
+    if (!workspace) {
+      throw new Error('Workspace not found')
+    }
     await workspace.delete()
   }
 }

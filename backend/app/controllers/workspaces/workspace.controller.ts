@@ -1,9 +1,9 @@
 import type { HttpContext } from '@adonisjs/core/http'
 import { createWorkspaceSchema, updateWorkspaceSchema } from './workspace.validator.js'
 import WorkspaceService from './workspace.service.js'
-
+const MAX_LIMIT = 50
 export default class WorkspaceController {
-  constructor(private service = new WorkspaceService()) {}
+  constructor(private service = new WorkspaceService()) { }
 
   public async create({ request, response }: HttpContext) {
     const payload = await request.validateUsing(createWorkspaceSchema)
@@ -18,12 +18,20 @@ export default class WorkspaceController {
 
     return response.created({ message: 'Workspace created', workspace })
   }
-
+  
   public async list({ request, response }: HttpContext) {
     const company = (request as any).company
+    const page = Math.max(1, Number(request.input('page', 1)))
+    const limit = Math.min(
+      MAX_LIMIT,
+      Math.max(1, Number(request.input('limit', 10)))
+    )
 
-    const workspaces = await this.service.list(company.id)
-
+    const workspaces = await this.service.list(
+      company.id,
+      page,
+      limit
+    )
     return response.ok(workspaces)
   }
 

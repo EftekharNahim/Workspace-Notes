@@ -1,8 +1,8 @@
 import { api } from './axios'
 
 export const workspaceApi = {
-  list() {
-    return api.get('/workspaces')
+  list(page = 1, limit = 10) {
+    return api.get('/workspaces',{ params: { page, limit } })
   },
 
   create(data: { name: string }) {
