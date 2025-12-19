@@ -147,9 +147,10 @@ export default class NoteService {
   /**
    * List private workspace notes (owner view): search by title, pagination
    */
+
   public async listPrivate(workspaceId: number, companyId: number, options: { page?: number; limit?: number; q?: string }) {
     const page = options.page || 1
-    const limit = options.limit || 20
+    const limit =Math.min(10,(options.limit || 10))
     const query = Note.query().where('workspace_id', workspaceId)
 
     // ensure workspace belongs to company
@@ -176,7 +177,7 @@ export default class NoteService {
     tag?: string
   }) {
     const page = options.page || 1
-    const limit = options.limit || 20
+    const limit =Math.min(20, (options.limit || 20))
     const q = options.q
     const sort = options.sort || 'new'
 
