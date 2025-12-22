@@ -77,10 +77,16 @@ export default class NoteService {
     try {
       const note = await Note.query({ client: trx })
         .where('id', noteId)
-        .firstOrFail()
+        .first()
+      if (!note) {
+        throw new Error('Note not found')
+      }
 
       // Ensure workspace belongs to company (defense)
-      const workspace = await Workspace.findOrFail(note.workspaceId)
+      const workspace = await Workspace.find(note.workspaceId)
+      if (!workspace) {
+        throw new Error('Workspace not found')
+      }
       if (workspace.companyId !== company.id) {
         throw new Error('Unauthorized')
       }
@@ -111,9 +117,9 @@ export default class NoteService {
       if (payload.tags) {
         await NoteTag.query({ client: trx }).where('note_id', note.id).delete()
         for (const tname of payload.tags) {
-          let tag = await Tag.query({ client: trx }).where('name', tname).andWhere("hostname",company.hostname).first()
+          let tag = await Tag.query({ client: trx }).where('name', tname).andWhere("hostname", company.hostname).first()
           if (!tag) {
-            tag = await Tag.create({ name: tname ,hostname: company.hostname}, { client: trx })
+            tag = await Tag.create({ name: tname, hostname: company.hostname }, { client: trx })
           }
           await NoteTag.create({ noteId: note.id, tagId: tag.id }, { client: trx })
         }
@@ -150,7 +156,7 @@ export default class NoteService {
 
   public async listPrivate(workspaceId: number, companyId: number, options: { page?: number; limit?: number; q?: string }) {
     const page = options.page || 1
-    const limit =Math.min(10,(options.limit || 10))
+    const limit = Math.min(10, (options.limit || 10))
     const query = Note.query().where('workspace_id', workspaceId)
 
     // ensure workspace belongs to company
@@ -177,7 +183,7 @@ export default class NoteService {
     tag?: string
   }) {
     const page = options.page || 1
-    const limit =Math.min(20, (options.limit || 20))
+    const limit = Math.min(20, (options.limit || 20))
     const q = options.q
     const sort = options.sort || 'new'
 
@@ -261,10 +267,16 @@ export default class NoteService {
   }
 
   public async delete(noteId: number, companyId: number) {
-    const note = await Note.findOrFail(noteId)
+    const note = await Note.find(noteId)
+    if (!note) {
+      throw new Error('Note not found')
+    }
 
     // Ensure workspace belongs to company (defense)
-    const workspace = await Workspace.findOrFail(note.workspaceId)
+    const workspace = await Workspace.find(note.workspaceId)
+    if (!workspace) {
+      throw new Error('Workspace not found')
+    }
     if (workspace.companyId !== companyId) {
       throw new Error('Unauthorized')
     }

@@ -6,6 +6,7 @@ import Note from './note.js'
 import User from './user.js'
 
 export default class NoteHistory extends BaseModel {
+  public static table = 'note_history' 
   @column({ isPrimary: true })
   declare id: number
 

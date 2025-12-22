@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react'
-import { useParams } from 'react-router-dom'
+import { useParams, useNavigate } from 'react-router-dom'
 import { noteApi } from '../api/note.api'
 
 export default function NoteView() {
   const { id } = useParams()
+  const navigate = useNavigate()
   const [note, setNote] = useState<any>(null)
   const [loading, setLoading] = useState(true)
 
@@ -11,31 +12,62 @@ export default function NoteView() {
     if (!id) return
     setLoading(true)
     noteApi.show(Number(id))
-      .then((res) => setNote(res.data))
+      .then(res => setNote(res.data))
       .finally(() => setLoading(false))
   }
 
-  const handleVote = (voteType: 'upvote' | 'downvote') => {
+  const handleVote = async (voteType: 'upvote' | 'downvote') => {
     if (!note) return
-    noteApi.vote(note.id, voteType).then(() => loadNote())
+    await noteApi.vote(note.id, voteType)
+    loadNote()
   }
 
-  useEffect(() => {
-    loadNote()
-  }, [id])
+  const handleDelete = async () => {
+    if (!note) return
+    if (!confirm('Delete this note?')) return
+    await noteApi.remove(note.id)
+    navigate(-1) // go back to notes list
+  }
+
+  useEffect(loadNote, [id])
 
   if (loading) return <div>Loading note...</div>
   if (!note) return <div>Note not found.</div>
 
   return (
     <div className="p-4 max-w-2xl mx-auto">
-      <h2 className="text-2xl font-bold mb-2">{note.title}</h2>
-      <p className="text-gray-700 mb-2">{note.content}</p>
+      {/* Header */}
+      <div className="flex justify-between items-start mb-4">
+        <h2 className="text-2xl font-bold">{note.title}</h2>
+
+        <div className="space-x-2">
+          <button
+            onClick={() => navigate(`/notes/${note.id}/edit`)}
+            className="px-3 py-1 text-sm bg-blue-100 rounded"
+          >
+            ✏️ Edit
+          </button>
+          <button
+            onClick={handleDelete}
+            className="px-3 py-1 text-sm bg-red-100 rounded"
+          >
+            🗑 Delete
+          </button>
+        </div>
+      </div>
+
+      {/* Content */}
+      <p className="text-gray-700 mb-4 whitespace-pre-line">
+        {note.content}
+      </p>
 
       {/* Tags */}
       <div className="mb-4 flex flex-wrap gap-2">
         {note.tags?.map((t: any) => (
-          <span key={t.id} className="text-xs px-2 py-1 bg-gray-200 rounded">
+          <span
+            key={t.id}
+            className="text-xs px-2 py-1 bg-gray-200 rounded"
+          >
             {t.name}
           </span>
         ))}
@@ -59,7 +91,8 @@ export default function NoteView() {
 
       {/* Metadata */}
       <div className="text-sm text-gray-500">
-        Status: {note.status} | Type: {note.type} | Workspace: {note.workspace?.name || '-'}
+        Status: {note.status} | Type: {note.type} | Workspace:{' '}
+        {note.workspace?.name || '-'}
       </div>
     </div>
   )

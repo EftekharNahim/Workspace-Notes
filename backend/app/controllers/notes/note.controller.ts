@@ -2,7 +2,6 @@ import type { HttpContext } from '@adonisjs/core/http'
 import NoteService from './note.service.js'
 import { createNoteSchema, updateNoteSchema, voteSchema } from './note.validator.js'
 import Workspace from '../../models/workspace.js'
-import Note from '#models/note'
 
 export default class NoteController {
   constructor(private service = new NoteService()) { }
@@ -17,8 +16,7 @@ export default class NoteController {
       // controller-level check:
       // (workspace ownership check will also run in service)
       //const workspaceId = payload.workspaceId
-      // create note
-      // ✅ ADD THIS BLOCK
+      // create note only if workspace belongs to company
       const workspace = await Workspace
         .query()
         .where('id', payload.workspaceId)

@@ -1,7 +1,7 @@
 import router from '@adonisjs/core/services/router'
 import { middleware } from '#start/kernel'
-
-const NoteController = () => import('./note.controller.js')
+import NoteController from './note.controller.js'
+// const NoteController = () => import('./note.controller.js')
 
 router
   .group(() => {

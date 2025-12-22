@@ -78,18 +78,18 @@ export default function NotesApp() {
   // Debounce search: trigger load 400ms after last keystroke
   useEffect(() => {
     const t = setTimeout(() => {
-      setPage(1) // reset to first when search changes
-      loadNotes(1, limit, search)
+      setPage(page) // reset to first when search changes
+      loadNotes(page, limit, search)
     }, 400)
     return () => clearTimeout(t)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [search])
+  }, [search,page,limit])
 
   // Load when page or limit change
-  useEffect(() => {
-    loadNotes(page, limit, search)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [page, limit])
+  // useEffect(() => {
+  //   loadNotes(page, limit, search)
+  //   // eslint-disable-next-line react-hooks/exhaustive-deps
+  // }, [page, limit])
 
   const vote = async (id: number, voteType: "upvote" | "downvote") => {
     try {
