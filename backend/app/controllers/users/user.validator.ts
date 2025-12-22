@@ -1,5 +1,5 @@
 
-import vine,{SimpleMessagesProvider} from '@vinejs/vine'
+import vine, { SimpleMessagesProvider } from '@vinejs/vine'
 
 vine.messagesProvider = new SimpleMessagesProvider({
   // Global rule messages
@@ -11,11 +11,12 @@ vine.messagesProvider = new SimpleMessagesProvider({
 
   // Field-specific overrides (Optional)
   'email.unique': 'The email has already been registered.',
+  'email.regex': 'The email format is invalid.',
 })
 export const registerSchema = vine.compile(
   vine.object({
     username: vine.string().minLength(3).maxLength(50),
-    email: vine.string().email().unique(async (db, value) => {
+    email: vine.string().trim().regex(/^[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$/).email().unique(async (db, value) => {
       const existing = await db.from('users').where('email', value).first()
       return !existing
     }),

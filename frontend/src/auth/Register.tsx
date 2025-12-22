@@ -26,7 +26,7 @@ export default function Register() {
     }
 
     // Email validation (Using your specific regex)
-    const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+    const emailRegex = /^[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$/;
     // Standard Email Regex: /^[^\s@]+@[^\s@]+\.[^\s@]+$/
     if (!form.email) {
       newErrors.email = "Email is required";
@@ -50,6 +50,7 @@ export default function Register() {
     if (validate()) {
       try {
         await authApi.register(form);
+        alert("Registration successful! Please login.");
         navigate("/login");
       } catch (error) {
         console.error("Registration failed", error);

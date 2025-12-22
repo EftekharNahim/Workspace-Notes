@@ -43,6 +43,7 @@ export default function Login() {
         await login(form);
         navigate("/notes-app");
       } catch (err) {
+        alert("Invalid credentials");
         console.error("Login failed", err);
         // Optionally handle API errors here (e.g., "Invalid credentials")
       }

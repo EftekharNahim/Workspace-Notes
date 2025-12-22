@@ -68,14 +68,16 @@ export default function CreateCompany() {
       alert("Company created. Use owner credentials to login.");
       navigate("/login");
     } catch (err: any) {
-      // If backend VineJS returns validation errors (status 422)
-      if (err.response?.status === 422 && err.response.data.errors) {
-        const backendErrors: Record<string, string> = {};
-        err.response.data.errors.forEach((e: any) => {
-          backendErrors[e.field] = e.message;
-        });
-        setErrors(backendErrors);
-      } else {
+       const responseData = err.response?.data;
+      if (responseData && Array.isArray(responseData.error)) {
+      const backendErrors: Record<string, string> = {};
+      
+      responseData.error.forEach((e: any) => {
+        backendErrors[e.field] = e.message;
+      });
+
+      setErrors(backendErrors);
+    } else {
         alert(err.response?.data?.message || "Something went wrong");
       }
     }
