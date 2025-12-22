@@ -1,4 +1,4 @@
-import vine from '@vinejs/vine'
+import vine, {SimpleMessagesProvider } from '@vinejs/vine'
 
 export const createNoteSchema = vine.compile(
   vine.object({
@@ -26,3 +26,33 @@ export const voteSchema = vine.compile(
     voteType: vine.enum(['upvote', 'downvote']),
   })
 )
+
+createNoteSchema.messagesProvider = new SimpleMessagesProvider({
+  // Global rule messages
+  'required': 'The {{ field }} is required.',
+  'minLength': 'The {{ field }} must be at least {{ min }} characters.',
+  'maxLength': 'The {{ field }} must not exceed {{ max }} characters.',
+  'positive': 'The {{ field }} must be a positive number.',
+
+  // Field-specific overrides (Optional)
+  'type.enum': 'The {{ field }} must be either public or private.',
+  'status.enum': 'The {{ field }} must be either draft or published.'
+})
+
+updateNoteSchema.messagesProvider = new SimpleMessagesProvider({
+  // Global rule messages
+  'minLength': 'The {{ field }} must be at least {{ min }} characters.',
+  'maxLength': 'The {{ field }} must not exceed {{ max }} characters.',
+
+  // Field-specific overrides (Optional)
+  'type.enum': 'The {{ field }} must be either public or private.',
+  'status.enum': 'The {{ field }} must be either draft or published.'
+})
+
+voteSchema.messagesProvider = new SimpleMessagesProvider({
+  // Global rule messages
+  'required': 'The {{ field }} is required.',
+
+  // Field-specific overrides (Optional)
+  'voteType.enum': 'The {{ field }} must be either upvote or downvote.',
+})

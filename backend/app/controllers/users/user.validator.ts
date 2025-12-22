@@ -1,6 +1,17 @@
-import vine from '@vinejs/vine'
 
+import vine,{SimpleMessagesProvider} from '@vinejs/vine'
 
+vine.messagesProvider = new SimpleMessagesProvider({
+  // Global rule messages
+  'required': 'The {{ field }} is required.',
+  'unique': 'The {{ field }} has already been taken.',
+  'email': 'The {{ field }} must be a valid email address.',
+  'minLength': 'The {{ field }} must be at least {{ min }} characters.',
+  'maxLength': 'The {{ field }} must not exceed {{ max }} characters.',
+
+  // Field-specific overrides (Optional)
+  'email.unique': 'The email has already been registered.',
+})
 export const registerSchema = vine.compile(
   vine.object({
     username: vine.string().minLength(3).maxLength(50),
