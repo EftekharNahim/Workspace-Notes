@@ -1,10 +1,10 @@
 import { Outlet, Link, useNavigate } from "react-router-dom"
 import { useAuth } from "../../hooks/useAuth"
-import { useCompany } from "../../hooks/useCompany"
+//  import { useCompany } from "../../hooks/useCompany"
 
 export default function AppLayout() {
-  const { user, logout } = useAuth()
-  const { company } = useCompany()
+  const { user, logout,company } = useAuth()
+  // const { company } = useCompany()
   const navigate = useNavigate()
 
   const handleLogout = async () => {

@@ -6,13 +6,36 @@ export const AuthContext = createContext<any>(null)
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<any>(null)
   const [loading, setLoading] = useState(true)
+  const [company, setCompany] = useState<any>(null)
 
   useEffect(() => {
-    authApi.me()
-      .then(res => setUser(res.data.user))
-      .catch(() => setUser(null))
-      .finally(() => setLoading(false))
-  }, [])
+  let isMounted = true
+
+  const fetchMe = async () => {
+    try {
+      const res = await authApi.me()
+      console.log('Fetched user:', res.data);
+      if (!isMounted) return
+      setUser(res.data.user)
+      setCompany(res.data.company)
+    } catch (err) {
+      if (!isMounted) return
+      setUser(null)
+      setCompany(null)
+      console.error('Failed to fetch user', err)
+    } finally {
+      if (!isMounted) return
+      setLoading(false)
+    }
+  }
+
+  fetchMe()
+
+  return () => {
+    isMounted = false
+  }
+}, [])
+
 
   const login = async (data: any) => {
     await authApi.login(data)
@@ -26,7 +49,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <AuthContext.Provider value={{ user, login, logout, loading }}>
+    <AuthContext.Provider value={{ user, login, logout, loading, company }}>
       {children}
     </AuthContext.Provider>
   )

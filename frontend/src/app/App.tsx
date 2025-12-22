@@ -1,6 +1,6 @@
 import { RouterProvider, createBrowserRouter } from 'react-router-dom'
 import { AuthProvider } from '../context/AuthContext'
-import { CompanyProvider } from '../context/CompanyContext'
+// import { CompanyProvider } from '../context/CompanyContext'
 import { WorkspaceProvider } from '../context/WorkspaceContext'
 
 import AppLayout from '../components/layout/AppLayout'
@@ -45,11 +45,11 @@ export const router = createBrowserRouter([
 export default function AppContainer() {
   return (
     <AuthProvider>
-      <CompanyProvider>
+      {/* <CompanyProvider> */}
       <WorkspaceProvider>
           <RouterProvider router={router} />
       </WorkspaceProvider>
-      </CompanyProvider>
+      {/* </CompanyProvider> */}
     </AuthProvider>
   )
 }

@@ -1,4 +1,4 @@
 import { useContext } from 'react'
-import { CompanyContext } from '../context/CompanyContext'
+import { AuthContext } from '../context/AuthContext'
 
-export const useCompany = () => useContext(CompanyContext)
+export const useCompany = () => useContext(AuthContext)
