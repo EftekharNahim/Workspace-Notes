@@ -33,6 +33,7 @@ export default class UserController {
 
   public async login({ request, response, auth }: HttpContext) {
     try {
+      
       const payload = await request.validateUsing(loginSchema)
       const user = await this.service.login(payload)
       const token = await auth.use('web').login(user)

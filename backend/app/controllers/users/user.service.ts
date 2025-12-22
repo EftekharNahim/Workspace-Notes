@@ -1,6 +1,7 @@
 import User from '../../models/user.js'
 import hash from '@adonisjs/core/services/hash'
 import db from '@adonisjs/lucid/services/db'
+// import { request } from 'http';
 
 export default class UserService {
     public async register(payload: { username: string; email: string; password: string; companyId: number }) {
@@ -22,7 +23,10 @@ export default class UserService {
     }
 
     public async login(payload: { email: string; password: string }) {
-        const user = await User.query().where('email', payload.email).firstOrFail()
+        const user = await User.query().where('email', payload.email).first()
+        if (!user) {
+            throw new Error('Invalid credentials')
+        }
         const isVerified = await hash.verify(user.password, payload.password)
         if (!isVerified) {
             throw new Error('Invalid credentials')
