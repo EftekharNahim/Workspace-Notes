@@ -122,4 +122,29 @@ export default class NoteController {
       return response.badRequest({ message: 'Vote failed', error: error.message || error })
     }
   }
+
+  // GET /notes/:id/history
+  public async getHistory({ response, params }: HttpContext) {
+    try {
+      const historyEntries = await this.service.getHistory(Number(params.id))
+      return response.ok(historyEntries)
+    } catch (error) {
+      return response.badRequest({ message: 'Get history failed', error: error.message || error })
+    }
+  }
+
+  // POST /notes/history/:historyId/restore
+  public async restoreHistory({ request, response, params, auth }: HttpContext) {
+    try {
+      const user = auth.user!
+      const company = (request as any).company
+      const note = await this.service.restoreHistory(Number(params.historyId), user.id, {
+        id: company.id,
+        hostname: company.hostname,
+      })
+      return response.ok({ message: 'Note restored from history', note })
+    } catch (error) {
+      return response.badRequest({ message: 'Restore failed', error: error.message || error })
+    }
+  }
 }

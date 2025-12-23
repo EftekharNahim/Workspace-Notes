@@ -283,4 +283,61 @@ export default class NoteService {
 
     await note.delete()
   }
+
+  public async getHistory(noteId: number) {
+    const histories = await NoteHistory.query()
+      .where('note_id', noteId)
+      .orderBy('created_at', 'desc')
+    return histories
+  }
+
+  public async restoreHistory(historyId: number, userId: number, company: { id: number; hostname: string }) {
+    const trx = await db.transaction()
+    try {
+      const history = await NoteHistory.query({ client: trx })
+        .where('id', historyId)
+        .first()
+      if (!history) {
+        throw new Error('History entry not found')
+      }
+
+      const note = await Note.query({ client: trx })
+        .where('id', history.noteId)
+        .first()
+      if (!note) {
+        throw new Error('Note not found')
+      }
+
+      // Ensure workspace belongs to company (defense)
+      const workspace = await Workspace.find(note.workspaceId)
+      if (!workspace) {
+        throw new Error('Workspace not found')
+      }
+      if (workspace.companyId !== company.id) {
+        throw new Error('Unauthorized')
+      }
+
+      // create new history entry of current state
+      await NoteHistory.create(
+        {
+          noteId: note.id,
+          userId,
+          title: note.title,
+          content: note.content,
+        },
+        { client: trx }
+      )
+
+      // restore note content
+      note.title = history.title
+      note.content = history.content
+      await note.useTransaction(trx).save()
+
+      await trx.commit()
+      return note
+    } catch (error) {
+      await trx.rollback()
+      throw error
+    }
+  }
 }
