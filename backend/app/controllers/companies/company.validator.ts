@@ -15,7 +15,7 @@ export const createCompanySchema = vine.compile(
       .unique(async (db, value) => {
         const existing = await db.from('companies').where('hostname', value).first()
         return !existing
-      }),
+    }),
 
     ownerUsername: vine.string().minLength(3).maxLength(50),
 

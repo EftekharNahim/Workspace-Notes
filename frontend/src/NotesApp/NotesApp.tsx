@@ -1,29 +1,35 @@
-import { useEffect, useState, useCallback } from "react"
-import { ThumbsUp, ThumbsDown, Search } from "lucide-react"
-import { api } from "../api/axios"
-import { useNavigate } from "react-router-dom"
-import { useAuth } from "../hooks/useAuth"
+import { useEffect, useState, useCallback, use } from "react";
+import { ThumbsUp, ThumbsDown, Search } from "lucide-react";
+import { api } from "../api/axios";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "../hooks/useAuth";
 
-type RawNote = any
+type RawNote = any;
 type Note = {
-  id: number
-  title: string
-  content: string
-  tags: { name: string }[]
-  upvotesCount: number
-  downvotesCount: number
-  workspace?: { name: string }
-}
+  id: number;
+  title: string;
+  content: string;
+  tags: { name: string }[];
+  upvotesCount: number;
+  downvotesCount: number;
+  workspace?: { name: string };
+};
 
 export default function NotesApp() {
-  const [notes, setNotes] = useState<Note[]>([])
-  const [search, setSearch] = useState("")
-  const [loading, setLoading] = useState(false)
-  const [page, setPage] = useState<number>(1)
-  const [limit, setLimit] = useState<number>(12)
-  const [meta, setMeta] = useState<any | null>(null)
-  const navigate = useNavigate()
-  const { user } = useAuth()
+  const [notes, setNotes] = useState<Note[]>([]);
+  const [search, setSearch] = useState("");
+  const [searchDebounced, setSearchDebounced] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [page, setPage] = useState<number>(1);
+  const [limit, setLimit] = useState<number>(12);
+  const [meta, setMeta] = useState<any | null>(null);
+  const [sort, setSort] = useState<
+    "new" | "old" | "most_upvotes" | "most_downvotes"
+  >("new");
+  
+
+  const navigate = useNavigate();
+  const { user } = useAuth();
 
   // Normalize server note -> frontend Note
   const normalize = (raw: RawNote): Note => {
@@ -31,75 +37,76 @@ export default function NotesApp() {
       id: raw.id,
       title: raw.title,
       content: raw.content,
-      // tags might be an array of tag objects or strings
       tags: Array.isArray(raw.tags)
         ? raw.tags.map((t: any) => ({ name: t.name ?? t }))
         : [],
-      // server may return snake_case or camelCase
-      upvotesCount:
-        raw.upvotes_count ?? raw.upvotesCount ?? raw.upvotes ?? 0,
+      upvotesCount: raw.upvotes_count ?? raw.upvotesCount ?? raw.upvotes ?? 0,
       downvotesCount:
         raw.downvotes_count ?? raw.downvotesCount ?? raw.downvotes ?? 0,
-      workspace: raw.workspace
-        ? { name: raw.workspace.name ?? raw.workspace.title ?? "" }
-        : undefined,
-    }
-  }
+      workspace: raw.workspace ? { name: raw.workspace.name ?? "" } : undefined,
+    };
+  };
 
+  // loadNotes accepts explicit args (so it doesn't rely on stale closures)
   const loadNotes = useCallback(
-    async (p = page, lim = limit, query = search) => {
-      setLoading(true)
+    async (
+      p: number,
+      lim: number,
+      q: string,
+      s: "new" | "old" | "most_upvotes" | "most_downvotes"
+    ) => {
+      setLoading(true);
       try {
         const res = await api.get("/notes/public", {
-          params: { page: p, limit: lim, q: query },
-        })
+          params: { page: p, limit: lim, q, sort: s },
+        });
 
-        // Paginator shape from Adonis: { meta, data }
-        const responseData = res.data?.data ?? res.data
-        const responseMeta = res.data?.meta ?? null
+        // support both Adonis paginated { data, meta } and raw arrays
+        const responseData = res.data?.data ?? res.data;
+        const responseMeta = res.data?.meta ?? null;
 
         const normalized = Array.isArray(responseData)
           ? responseData.map(normalize)
-          : []
+          : [];
 
-        setNotes(normalized)
-        setMeta(responseMeta)
+        setNotes(normalized);
+        setMeta(responseMeta);
       } catch (err) {
-        console.error("Error loading notes:", err)
-        setNotes([])
-        setMeta(null)
+        console.error("Error loading notes:", err);
+        setNotes([]);
+        setMeta(null);
       } finally {
-        setLoading(false)
+        setLoading(false);
       }
     },
-    [page, limit, search]
-  )
+    []
+  );
 
-  // Debounce search: trigger load 400ms after last keystroke
+  // Debounce search — reset page to 1 when search changes
   useEffect(() => {
     const t = setTimeout(() => {
-      setPage(page) // reset to first when search changes
-      loadNotes(page, limit, search)
-    }, 400)
-    return () => clearTimeout(t)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [search,page,limit])
+      setPage(1); // reset page
+      setSearchDebounced(search);
+    }, 400);
 
-  // Load when page or limit change
-  // useEffect(() => {
-  //   loadNotes(page, limit, search)
-  //   // eslint-disable-next-line react-hooks/exhaustive-deps
-  // }, [page, limit])
+    return () => clearTimeout(t);
+  }, [search]);
 
+  // Load notes when page, limit, searchDebounced, or sort changes
+  useEffect(() => {
+    loadNotes(page, limit, searchDebounced, sort);
+  }, [page, limit, searchDebounced, sort]);
+
+  // Voting
   const vote = async (id: number, voteType: "upvote" | "downvote") => {
     try {
-      await api.post(`/notes/${id}/vote`, { voteType })
+      await api.post(`/notes/${id}/vote`, { voteType });
       // refresh current page
-      loadNotes(page, limit, search)
+      loadNotes(page, limit, search, sort);
     } catch (err) {
-      console.error("Vote failed", err)
+      console.error("Vote failed", err);
     }
-  }
+  };
 
   if (!user)
     return (
@@ -108,17 +115,17 @@ export default function NotesApp() {
           Please login to view notes.
         </h2>
       </div>
-    )
+    );
 
-  const currentPage = meta?.current_page ?? meta?.currentPage ?? page
-  const lastPage = meta?.last_page ?? meta?.lastPage ?? null
+  const currentPage = meta?.current_page ?? meta?.currentPage ?? page;
+  const lastPage = meta?.last_page ?? meta?.lastPage ?? null;
 
   return (
     <div className="min-h-screen bg-gray-100">
-      <header className="bg-white border-b px-6 py-4 flex justify-between items-center">
+      <header className="bg-white border-b px-6 py-4 flex flex-col md:flex-row justify-between items-center gap-3">
         <h1 className="text-xl font-bold">Public Notes</h1>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3 w-full md:w-auto">
           <button
             onClick={() => navigate("/workspaces")}
             className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 transition"
@@ -126,19 +133,43 @@ export default function NotesApp() {
             Workspaces
           </button>
 
-          <Search size={18} />
-          <input
-            type="text"
-            placeholder="Search notes..."
+          <div className="flex items-center gap-2 border rounded px-2 py-1">
+            <Search size={18} />
+            <input
+              type="text"
+              placeholder="Search notes by title..."
+              className="outline-none"
+              value={search}
+              onChange={(e) => {
+                setSearch(e.target.value);
+              }}
+            />
+          </div>
+
+          <select
+            value={sort}
+            onChange={(e) => {
+              setPage(1);
+              setSort(
+                (e.target.value as
+                  | "new"
+                  | "old"
+                  | "most_upvotes"
+                  | "most_downvotes") || "new"
+              );
+            }}
             className="border px-2 py-1 rounded"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-          />
+          >
+            <option value="new">Newest</option>
+            <option value="old">Oldest</option>
+            <option value="most_upvotes">Most Upvotes</option>
+            <option value="most_downvotes">Most Downvotes</option>
+          </select>
         </div>
       </header>
 
       <main className="max-w-5xl mx-auto p-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {loading && <p>Loading notes...</p>}
+        {loading && <p className="col-span-full">Loading notes...</p>}
         {!loading && notes.length === 0 && (
           <p className="text-gray-500 col-span-full">No notes found.</p>
         )}
@@ -166,8 +197,8 @@ export default function NotesApp() {
             <div className="mt-3 flex gap-2">
               <button
                 onClick={(e) => {
-                  e.stopPropagation()
-                  vote(note.id, "upvote")
+                  e.stopPropagation();
+                  vote(note.id, "upvote");
                 }}
                 className="flex items-center gap-1 px-2 py-1 bg-green-100 rounded text-sm"
               >
@@ -175,8 +206,8 @@ export default function NotesApp() {
               </button>
               <button
                 onClick={(e) => {
-                  e.stopPropagation()
-                  vote(note.id, "downvote")
+                  e.stopPropagation();
+                  vote(note.id, "downvote");
                 }}
                 className="flex items-center gap-1 px-2 py-1 bg-red-100 rounded text-sm"
               >
@@ -194,14 +225,14 @@ export default function NotesApp() {
       </main>
 
       {/* Pagination */}
-      <div className="max-w-5xl mx-auto p-6 flex justify-between items-center">
+      <div className="max-w-5xl mx-auto p-6 flex flex-col md:flex-row justify-between items-center gap-3">
         <div>
           <label className="mr-2">Per page:</label>
           <select
             value={limit}
             onChange={(e) => {
-              setLimit(Number(e.target.value))
-              setPage(1)
+              setLimit(Number(e.target.value));
+              setPage(1);
             }}
             className="border px-2 py-1 rounded"
           >
@@ -234,5 +265,5 @@ export default function NotesApp() {
         </div>
       </div>
     </div>
-  )
+  );
 }

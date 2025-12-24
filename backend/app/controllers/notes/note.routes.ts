@@ -18,7 +18,7 @@ router
     router.post('/history/:historyId/restore', [NoteController, 'restoreHistory']) // restore note from history
   })
   .prefix('/notes')
-  .middleware([middleware.tenant(), middleware.auth()])  // Apply TenantMiddleware + AuthMiddleware (optional for public notes)
+  .middleware([middleware.tenant(), middleware.auth()])  // Apply TenantMiddleware + AuthMiddleware 
 
 // Public directory (no auth required)
 router
