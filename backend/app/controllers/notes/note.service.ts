@@ -137,7 +137,7 @@ export default class NoteService {
    * Soft show: returns note if public or if requester is in same company (owner/member)
    */
   public async show(noteId: number, requesterCompanyId?: number) {
-    const note = await Note.query().preload('tags').where('id', noteId).firstOrFail()
+    const note = await Note.query().preload('workspace').preload('tags').where('id', noteId).firstOrFail()
 
     // If public note, return
     if (note.type === 'public' && note.status === 'published') return note
@@ -183,7 +183,7 @@ export default class NoteService {
     tag?: string
   }) {
     const page = options.page || 1
-    const limit = Math.min(20, (options.limit || 20))
+    const limit = Math.min(24, (options.limit || 20))
     const q = options.q
     const sort = options.sort || 'new'
 
