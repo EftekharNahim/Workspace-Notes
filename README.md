@@ -120,3 +120,50 @@ frontend/
 │   └── utils/        (tenant.ts)
 ├── tailwind.config.js
 └── vite.config.ts
+
+
+---
+
+## Database design (summary)
+
+Key tables and columns (simplified):
+
+- `companies` (id, name, hostname, creator_id, created_at, updated_at)
+- `users` (id, company_id, username, email, password, role[owner|member], created_at, updated_at)
+- `workspaces` (id, company_id, name, created_at, updated_at)
+- `notes` (id, workspace_id, author_id, title, content, type, status, upvotes_count, downvotes_count, published_at, created_at, updated_at)
+- `tags` (id, name, hostname, created_at, updated_at)
+- `note_tags` (id, note_id, tag_id, created_at)
+- `note_history` (id, note_id, user_id, title, content, created_at)
+- `note_votes` (id, note_id, user_id, vote_type, created_at, updated_at)
+
+Important indexes:
+- `notes(title)` index for fast title search.
+- `note_history(created_at)` for cleanup queries.
+- Foreign keys for referential integrity (pay attention to creation order to avoid circular FK issues).
+
+---
+
+## Environment variables (.env example)
+
+Create `backend/.env`:
+
+```env
+APP_KEY=some_random_string
+HOST=0.0.0.0
+PORT=3333
+
+NODE_ENV=development
+
+DB_CONNECTION=mysql
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_USER=root
+DB_PASSWORD=your_password
+DB_NAME=workspace_notes
+
+SESSION_DRIVER=cookie
+SESSION_SECRET=another_random_secret
+
+HASH_DRIVER=scrypt
+
