@@ -123,7 +123,7 @@ frontend/
 
 
 ---
-
+```
 ## Database design (summary)
 
 Key tables and columns (simplified):
@@ -166,4 +166,6 @@ SESSION_DRIVER=cookie
 SESSION_SECRET=another_random_secret
 
 HASH_DRIVER=scrypt
+
+
 
