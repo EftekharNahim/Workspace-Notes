@@ -50,90 +50,73 @@ A multi-tenant notes system where:
 
 ---
 
-## Architecture & file structure
+# Project Structure
 
+## Architecture Overview
+
+This project is built using a decoupled **Backend (AdonisJS)** and **Frontend (React)** architecture. It utilizes a feature-based organization to ensure scalability and maintainability.
+
+---
+
+## 📂 Backend Structure (`/backend`)
+The backend follows the **Controller-Service-Validator** pattern to separate concerns.
+
+* **app/Controllers/Http/**: Organized by domain modules.
+    * `companies/`, `users/`, `workspaces/`, `notes/`: Each contains its own controller, service, validator, and route definitions.
+* **Middleware/TenantMiddleware.ts**: Handles multi-tenancy logic to scope requests.
+* **Models/**: Lucid ORM models defining database schemas and relationships (Notes, Tags, History, etc.).
+* **ace-commands/**: Custom CLI commands, including `NoteHistoryCleanup.ts` for automated maintenance.
+* **start/**: Application entry points for global routes and kernel configuration.
+
+## 📂 Frontend Structure (`/frontend`)
+The frontend is a TypeScript-based React application powered by Vite and Tailwind CSS.
+
+* **api/**: Centralized Axios instances and API service wrappers.
+* **app/**: Core application setup including the router and main entry points.
+* **context/**: Global state management for Authentication, Company, and Workspace contexts.
+* **hooks/**: Custom React hooks for reusable logic (e.g., `useAuth`, `useWorkspace`).
+* **utils/tenant.ts**: Utility functions for handling multi-tenant identifiers.
+* **Components/Views**: Feature-specific UI folders:
+    * `auth/`: Login and Registration.
+    * `company/`: Organization management.
+    * `workspace/`: Workspace navigation and creation.
+    * `notes/`: Core Note-taking features including the editor and list views.
+
+---
+
+## 🗂 Visual File Tree
+
+```text
 backend/
-app/
-Controllers/Http/
-companies/
-company.controller.ts
-company.service.ts
-company.validator.ts
-company.routes.ts
-users/
-user.controller.ts
-user.service.ts
-user.validator.ts
-user.routes.ts
-workspaces/
-workspace.controller.ts
-workspace.service.ts
-workspace.validator.ts
-workspace.routes.ts
-notes/
-note.controller.ts
-note.service.ts
-note.validator.ts
-note.routes.ts
-Middleware/
-TenantMiddleware.ts
-Models/
-company.ts
-user.ts
-workspace.ts
-note.ts
-tag.ts
-note_tag.ts
-note_history.ts
-note_vote.ts
-database/
-migrations/
-seeders/
-start/
-routes.ts
-kernel.ts
-ace-commands/
-NoteHistoryCleanup.ts <-- custom ace command
-package.json
-.env
+├── app/
+│   ├── Controllers/Http/
+│   │   ├── companies/ (controller, service, validator, routes)
+│   │   ├── users/     (controller, service, validator, routes)
+│   │   ├── workspaces/ (controller, service, validator, routes)
+│   │   └── notes/      (controller, service, validator, routes)
+│   ├── Middleware/
+│   │   └── TenantMiddleware.ts
+│   └── Models/
+│       └── (company.ts, user.ts, workspace.ts, note.ts, etc.)
+├── database/
+│   ├── migrations/
+│   └── seeders/
+├── ace-commands/
+│   └── NoteHistoryCleanup.ts
+└── start/
+    ├── routes.ts
+    └── kernel.ts
 
 frontend/
-src/
-api/
-axios.ts
-auth.api.ts
-workspace.api.ts
-note.api.ts
-app/
-App.tsx
-router.tsx
-auth/
-Login.tsx
-Register.tsx
-company/
-CreateCompany.tsx
-workspace/
-WorkspaceList.tsx
-CreateWorkspace.tsx
-notes/
-NoteList.tsx
-NoteCreate.tsx
-NoteEditor.tsx
-NoteView.tsx
-context/
-AuthContext.tsx
-CompanyContext.tsx
-WorkspaceContext.tsx
-hooks/
-useAuth.ts
-useWorkspace.ts
-utils/
-tenant.ts
-main.tsx
-index.css
-package.json
-vite.config.ts
-tailwind.config.js
-
-High-level project structure (backend + frontend):
-
+├── src/
+│   ├── api/          (axios.ts, auth.api.ts, workspace.api.ts, note.api.ts)
+│   ├── app/          (App.tsx, router.tsx)
+│   ├── auth/         (Login, Register)
+│   ├── company/      (CreateCompany)
+│   ├── workspace/    (WorkspaceList, CreateWorkspace)
+│   ├── notes/        (NoteList, NoteCreate, NoteEditor, NoteView)
+│   ├── context/      (AuthContext, CompanyContext, WorkspaceContext)
+│   ├── hooks/        (useAuth.ts, useWorkspace.ts)
+│   └── utils/        (tenant.ts)
+├── tailwind.config.js
+└── vite.config.ts
