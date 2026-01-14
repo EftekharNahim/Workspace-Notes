@@ -165,7 +165,10 @@ DB_NAME=workspace_notes
 SESSION_DRIVER=cookie
 SESSION_SECRET=another_random_secret
 
-HASH_DRIVER=scrypt
+HASH_DRIVER=scrypt```
 
+## Frontend .env (Vite):
 
+VITE_API_BASE=http://localhost:3333
+VITE_TENANT_HOST=localhost
 
