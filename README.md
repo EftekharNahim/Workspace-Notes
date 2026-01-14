@@ -1,99 +1,74 @@
 # 🗂 Workspace Notes
 
-**Workspace Notes** — a multi-tenant, production-oriented SaaS for workspace notes:
-multi-workspace, multi-company system built with **AdonisJS 6 (backend)**, **MySQL**, and **React (Vite + Tailwind)** (frontend).  
+**Workspace Notes** is a multi-tenant, production-ready SaaS platform for workspace collaboration and note-taking. Built with **AdonisJS 6** (backend), **MySQL**, and **React + Vite + Tailwind CSS** (frontend).
+
 Designed for performance (500k+ notes), security, and maintainability.
 
 ---
 
-## Table of contents
+## 📑 Table of Contents
 
-- [What it is](#what-it-is)
+- [What It Is](#what-it-is)
 - [Features](#features)
-- [Architecture & File structure](#architecture--file-structure)
-- [Database design (summary)](#database-design-summary)
-- [Environment variables (.env example)](#environment-variables-env-example)
-- [Backend: setup & common commands](#backend-setup--common-commands)
-- [Frontend: setup & common commands](#frontend-setup--common-commands)
-- [Running migrations & seeder (large dataset)](#running-migrations--seeder-large-dataset)
-- [Note history (7-day retention) — implementation & cleanup](#note-history-7-day-retention---implementation--cleanup)
-- [API reference & examples (curl)](#api-reference--examples-curl)
-- [Security, performance & scaling notes](#security-performance--scaling-notes)
-- [Troubleshooting / FAQs](#troubleshooting--faqs)
-- [Development tips / tests / CI](#development-tips--tests--ci)
-- [Contributing & License](#contributing--license)
+- [Architecture & File Structure](#architecture--file-structure)
+- [Database Design](#database-design)
+- [Environment Setup](#environment-setup)
+- [Backend Setup](#backend-setup)
+- [Frontend Setup](#frontend-setup)
+- [Database Seeding](#database-seeding)
+- [Note History & Cleanup](#note-history--cleanup)
+- [API Reference](#api-reference)
+- [Security & Performance](#security--performance)
+- [Troubleshooting](#troubleshooting)
+- [Development & Testing](#development--testing)
+- [Contributing](#contributing)
+- [License](#license)
 
 ---
 
-## What it is
+## 🎯 What It Is
 
 A multi-tenant notes system where:
 
-- A **Company** can have many **Workspaces**.
-- Each workspace holds many **Notes**.
-- Notes have tags, draft/published status, public/private type, votes, and history.
-- Hostname (or header) identifies the tenant (company).
-- Focus on fast queries, batch seeding, and safe history retention.
+- A **Company** can have many **Workspaces**
+- Each workspace holds many **Notes**
+- Notes have tags, draft/published status, public/private type, votes, and history
+- Hostname (or header) identifies the tenant (company)
+- Focus on fast queries, batch seeding, and safe history retention
 
 ---
 
-## Features
+## ✨ Features
 
-- Multi-tenant (hostname-based)
-- Workspaces per company
-- Notes: title, content, tags (many-to-many), type (public/private), status (draft/published)
-- Note votes (upvote/downvote) with counters
-- Note history on update (7-day retention, restorable)
-- Large-data seeder (1,000 workspaces / ~500k notes)
-- React frontend (Vite), Tailwind CSS
-- Secure user flow with hashed passwords and auth middleware
-
----
-
-# Project Structure
-
-## Architecture Overview
-
-This project is built using a decoupled **Backend (AdonisJS)** and **Frontend (React)** architecture. It utilizes a feature-based organization to ensure scalability and maintainability.
+- ✅ **Multi-tenant** architecture (hostname-based)
+- ✅ **Multiple workspaces** per company
+- ✅ **Rich notes** with title, content, tags (many-to-many), type (public/private), status (draft/published)
+- ✅ **Note voting** system (upvote/downvote) with counters
+- ✅ **Note history** on update with 7-day retention and restore capability
+- ✅ **Large-scale seeding** (1,000 workspaces / ~500k notes)
+- ✅ **Modern frontend** with React, Vite, and Tailwind CSS
+- ✅ **Secure authentication** with hashed passwords and middleware protection
 
 ---
 
-## 📂 Backend Structure (`/backend`)
-The backend follows the **Controller-Service-Validator** pattern to separate concerns.
+## 🏗 Architecture & File Structure
 
-* **app/Controllers/Http/**: Organized by domain modules.
-    * `companies/`, `users/`, `workspaces/`, `notes/`: Each contains its own controller, service, validator, and route definitions.
-* **Middleware/TenantMiddleware.ts**: Handles multi-tenancy logic to scope requests.
-* **Models/**: Lucid ORM models defining database schemas and relationships (Notes, Tags, History, etc.).
-* **ace-commands/**: Custom CLI commands, including `NoteHistoryCleanup.ts` for automated maintenance.
-* **start/**: Application entry points for global routes and kernel configuration.
+### Architecture Overview
 
-## 📂 Frontend Structure (`/frontend`)
-The frontend is a TypeScript-based React application powered by Vite and Tailwind CSS.
+This project uses a decoupled **Backend (AdonisJS)** and **Frontend (React)** architecture with feature-based organization for scalability and maintainability.
 
-* **api/**: Centralized Axios instances and API service wrappers.
-* **app/**: Core application setup including the router and main entry points.
-* **context/**: Global state management for Authentication, Company, and Workspace contexts.
-* **hooks/**: Custom React hooks for reusable logic (e.g., `useAuth`, `useWorkspace`).
-* **utils/tenant.ts**: Utility functions for handling multi-tenant identifiers.
-* **Components/Views**: Feature-specific UI folders:
-    * `auth/`: Login and Registration.
-    * `company/`: Organization management.
-    * `workspace/`: Workspace navigation and creation.
-    * `notes/`: Core Note-taking features including the editor and list views.
+### 📂 Backend Structure (`/backend`)
 
----
+The backend follows the **Controller-Service-Validator** pattern:
 
-## 🗂 Visual File Tree
-
-```text
+```
 backend/
 ├── app/
 │   ├── Controllers/Http/
-│   │   ├── companies/ (controller, service, validator, routes)
-│   │   ├── users/     (controller, service, validator, routes)
-│   │   ├── workspaces/ (controller, service, validator, routes)
-│   │   └── notes/      (controller, service, validator, routes)
+│   │   ├── companies/      # Company management
+│   │   ├── users/          # User authentication
+│   │   ├── workspaces/     # Workspace CRUD
+│   │   └── notes/          # Note operations
 │   ├── Middleware/
 │   │   └── TenantMiddleware.ts
 │   └── Models/
@@ -106,50 +81,59 @@ backend/
 └── start/
     ├── routes.ts
     └── kernel.ts
+```
 
+### 📂 Frontend Structure (`/frontend`)
+
+TypeScript-based React application powered by Vite:
+
+```
 frontend/
 ├── src/
-│   ├── api/          (axios.ts, auth.api.ts, workspace.api.ts, note.api.ts)
-│   ├── app/          (App.tsx, router.tsx)
-│   ├── auth/         (Login, Register)
-│   ├── company/      (CreateCompany)
-│   ├── workspace/    (WorkspaceList, CreateWorkspace)
-│   ├── notes/        (NoteList, NoteCreate, NoteEditor, NoteView)
-│   ├── context/      (AuthContext, CompanyContext, WorkspaceContext)
-│   ├── hooks/        (useAuth.ts, useWorkspace.ts)
-│   └── utils/        (tenant.ts)
+│   ├── api/               # API service wrappers
+│   ├── app/               # Router & entry points
+│   ├── auth/              # Login & Registration
+│   ├── company/           # Organization management
+│   ├── workspace/         # Workspace views
+│   ├── notes/             # Note editor & views
+│   ├── context/           # Global state management
+│   ├── hooks/             # Custom React hooks
+│   └── utils/             # Helper functions
 ├── tailwind.config.js
 └── vite.config.ts
-
-
----
 ```
-## Database design (summary)
-
-Key tables and columns (simplified):
-
-- `companies` (id, name, hostname, creator_id, created_at, updated_at)
-- `users` (id, company_id, username, email, password, role[owner|member], created_at, updated_at)
-- `workspaces` (id, company_id, name, created_at, updated_at)
-- `notes` (id, workspace_id, author_id, title, content, type, status, upvotes_count, downvotes_count, published_at, created_at, updated_at)
-- `tags` (id, name, hostname, created_at, updated_at)
-- `note_tags` (id, note_id, tag_id, created_at)
-- `note_history` (id, note_id, user_id, title, content, created_at)
-- `note_votes` (id, note_id, user_id, vote_type, created_at, updated_at)
-
-Important indexes:
-- `notes(title)` index for fast title search.
-- `note_history(created_at)` for cleanup queries.
-- Foreign keys for referential integrity (pay attention to creation order to avoid circular FK issues).
 
 ---
 
-## Environment variables (.env example)
+## 🗄 Database Design
+
+### Key Tables
+
+- **companies** - `id`, `name`, `hostname`, `creator_id`, `created_at`, `updated_at`
+- **users** - `id`, `company_id`, `username`, `email`, `password`, `role`, `created_at`, `updated_at`
+- **workspaces** - `id`, `company_id`, `name`, `created_at`, `updated_at`
+- **notes** - `id`, `workspace_id`, `author_id`, `title`, `content`, `type`, `status`, `upvotes_count`, `downvotes_count`, `published_at`, `created_at`, `updated_at`
+- **tags** - `id`, `name`, `hostname`, `created_at`, `updated_at`
+- **note_tags** - `id`, `note_id`, `tag_id`, `created_at`
+- **note_history** - `id`, `note_id`, `user_id`, `title`, `content`, `created_at`
+- **note_votes** - `id`, `note_id`, `user_id`, `vote_type`, `created_at`, `updated_at`
+
+### Important Indexes
+
+- `notes(title)` - Fast title search
+- `note_history(created_at)` - Cleanup queries
+- Foreign keys for referential integrity
+
+---
+
+## ⚙️ Environment Setup
+
+### Backend `.env`
 
 Create `backend/.env`:
 
 ```env
-APP_KEY=some_random_string
+APP_KEY=your_random_app_key_here
 HOST=0.0.0.0
 PORT=3333
 
@@ -163,121 +147,132 @@ DB_PASSWORD=your_password
 DB_NAME=workspace_notes
 
 SESSION_DRIVER=cookie
-SESSION_SECRET=another_random_secret
+SESSION_SECRET=your_random_session_secret
 
 HASH_DRIVER=scrypt
----
 ```
-## Frontend .env (Vite):
 
-```
+### Frontend `.env`
+
+Create `frontend/.env`:
+
+```env
 VITE_API_BASE=http://localhost:3333
 VITE_TENANT_HOST=localhost
----
 ```
-# Backend: setup & common commands
-Install
+
+---
+
+## 🚀 Backend Setup
+
+### Installation
+
+```bash
 cd backend
 npm ci
+```
 
-Generate app key (Adonis)
+### Generate App Key
+
+```bash
 node ace generate:key
+```
 
-Migrations
+### Run Migrations
+
+```bash
 node ace migration:run
-# rollback
-node ace migration:rollback
+```
 
-Seed (SMALL_RUN for fast dev)
+### Start Development Server
 
-For local quick tests:
-
-SMALL_RUN=true node ace db:seed
-
-
-Full seeding (heavy — use on server or powerful machine):
-
-node ace db:seed
-
-Start server (dev)
+```bash
 node ace serve --watch
+```
 
-Useful helpers
+### Useful Commands
+
+```bash
 node ace make:migration create_notes_table
 node ace make:seeder DatabaseSeeder
-node ace list            # list ace commands
+node ace list
 node ace help <command>
+```
 
-Frontend: setup & common commands
-Install
+---
+
+## 🎨 Frontend Setup
+
+### Installation
+
+```bash
 cd frontend
 npm ci
+```
 
-Tailwind setup (if not present)
+### Tailwind CSS Setup
 
-Install:
+If not already configured:
 
+```bash
 npm i -D tailwindcss postcss autoprefixer
 npx tailwindcss init -p
+```
 
+**tailwind.config.js:**
 
-tailwind.config.js:
-
+```javascript
 export default {
   content: ['./index.html', './src/**/*.{js,ts,jsx,tsx}'],
   theme: { extend: {} },
   plugins: [],
 }
+```
 
+**src/index.css:**
 
-src/index.css:
-
+```css
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+```
 
+### Development Commands
 
-Import index.css in src/main.tsx.
+```bash
+npm run dev      # Start dev server
+npm run build    # Build for production
+npm run preview  # Preview production build
+```
 
-Dev
-npm run dev
-# build
-npm run build
-# preview
-npm run preview
+---
 
-Running migrations & seeder (large dataset)
+## 🌱 Database Seeding
 
-Seeder notes (from repository):
+### Seeder Features
 
-Seeder uses bulk raw INSERTs to avoid ORM overhead.
+- Bulk raw INSERTs for maximum performance
+- `SMALL_RUN=true` for quick testing (5 workspaces / 200 notes)
+- Idempotent tag creation using `INSERT ... ON DUPLICATE KEY UPDATE`
 
-It supports SMALL_RUN=true for quick testing (e.g. 5 workspaces / 200 notes).
+### Quick Test Seed
 
-Ensure MySQL max_allowed_packet is large enough for bulk inserts. If you get insert-size errors, lower CHUNK_SIZE in seeder or increase max_allowed_packet.
-
-Use INSERT ... ON DUPLICATE KEY UPDATE for idempotent tag creation (we use hostname+name unique key).
-
-Run the seeder:
-
-# quick local test
+```bash
 cd backend
 SMALL_RUN=true node ace db:seed
+```
 
-# full run (careful)
+### Full Production Seed
+
+```bash
 node ace db:seed
+```
 
+> ⚠️ **Note:** Ensure MySQL `max_allowed_packet` is configured for bulk inserts. Adjust `CHUNK_SIZE` in seeder if needed.
 
-If you get "no rows inserted" or "tags empty"
+### Reset Database (Development Only)
 
-Confirm .env DB details and that DB user has INSERT privileges.
-
-Confirm migrations ran and the tags table expects hostname (include it in payload).
-
-If the seeder reported inserted counts but tables show zero rows: check you are connected to the same database used by your MySQL client (DB_NAME).
-
-Reset DB (dev only):
-
+```sql
 SET FOREIGN_KEY_CHECKS = 0;
 TRUNCATE TABLE note_tags;
 TRUNCATE TABLE notes;
@@ -286,36 +281,26 @@ TRUNCATE TABLE workspaces;
 TRUNCATE TABLE users;
 TRUNCATE TABLE companies;
 SET FOREIGN_KEY_CHECKS = 1;
+```
 
+---
 
-If your MySQL client prevents DELETE/TRUNCATE without safe mode turned off, disable safe update mode in client preferences or run explicit DELETE ... WHERE 1.
+## 📜 Note History & Cleanup
 
-Note history (7-day retention) — details & cleanup
-Behavior
+### How It Works
 
-Every update to a note should create a note_history row with:
+Every note update creates a `note_history` entry with:
+- Previous title and content
+- User ID who made the change
+- Timestamp
 
-previous title
+History is restorable via API.
 
-previous content
+### Cleanup Command
 
-user_id who made the change
+**ace-commands/NoteHistoryCleanup.ts:**
 
-created_at timestamp
-
-History entries are restorable: a restore API will copy history fields back into notes (and optionally create a new history row for the state before restore).
-
-Cleanup approach (offloaded)
-
-A custom Ace command (node ace note:cleanup) performs a chunked DELETE of note_history rows older than 7 days:
-
-Deletes up to N rows per loop (e.g. 1000) to avoid table locks and heavy load.
-
-Schedule this command in cron (system level), NOT inside the main Node process.
-
-Example Ace command (simplified):
-
-// ace-commands/NoteHistoryCleanup.ts (example)
+```typescript
 import { BaseCommand } from '@adonisjs/core/build/standalone'
 import Database from '@adonisjs/lucid/services/db'
 import { DateTime } from 'luxon'
@@ -336,26 +321,29 @@ export default class NoteHistoryCleanup extends BaseCommand {
     }
   }
 }
+```
 
+### Cron Setup
 
-Cron (systemd / crontab) — example:
-
+```bash
+# Run daily at 3 AM
 0 3 * * * cd /path/to/backend && /usr/bin/node ace note:cleanup >> /var/log/workspace_notes/cleanup.log 2>&1
+```
 
+**Why chunked deletes?**
+- Prevents long table locks
+- Offloads work from web processes
+- Safe for production environments
 
-Why this is safe:
+---
 
-Offloads work from web processes.
+## 🔌 API Reference
 
-Chunked deletes prevent long table locks.
+All tenant-protected endpoints require either matching hostname or `X-Tenant-Host` header.
 
-Run nightly during low traffic.
+### Create Company
 
-API reference & examples (curl)
-
-All tenant-protected endpoints expect either real request hostname to match companies.hostname or X-Tenant-Host header.
-
-Create company (+ owner user)
+```bash
 curl -X POST http://localhost:3333/companies \
   -H 'Content-Type: application/json' \
   -d '{
@@ -365,143 +353,177 @@ curl -X POST http://localhost:3333/companies \
     "ownerEmail": "alice@acme.local",
     "ownerPassword": "secret123"
   }'
+```
 
-Register (tenant header required)
+### Register User
+
+```bash
 curl -X POST http://localhost:3333/register \
   -H 'Content-Type: application/json' \
   -H 'X-Tenant-Host: acme' \
-  -d '{"username":"bob","email":"bob@acme.local","password":"password1234"}'
+  -d '{
+    "username": "bob",
+    "email": "bob@acme.local",
+    "password": "password1234"
+  }'
+```
 
-Login (session/token)
+### Login
+
+```bash
 curl -X POST http://localhost:3333/login \
   -H 'Content-Type: application/json' \
-  -d '{"email":"bob@acme.local","password":"password1234"}' \
+  -d '{
+    "email": "bob@acme.local",
+    "password": "password1234"
+  }' \
   -c cookies.txt
+```
 
-Create note (tenant + auth cookie)
+### Create Note
+
+```bash
 curl -X POST http://localhost:3333/notes \
   -H 'Content-Type: application/json' \
   -H 'X-Tenant-Host: acme' \
   -b cookies.txt \
-  -d '{"title":"Meeting notes","content":"Agenda...", "tags":["planning","urgent"], "workspaceId":1, "type":"private", "status":"published"}'
+  -d '{
+    "title": "Meeting notes",
+    "content": "Agenda and action items...",
+    "tags": ["planning", "urgent"],
+    "workspaceId": 1,
+    "type": "private",
+    "status": "published"
+  }'
+```
 
-Public notes listing (search + sort)
+### List Public Notes
+
+```bash
 curl "http://localhost:3333/notes/public?q=meeting&sort=new&page=1&limit=20"
+```
 
-Vote a note
+### Vote on Note
+
+```bash
 curl -X POST http://localhost:3333/notes/123/vote \
   -H 'Content-Type: application/json' \
   -b cookies.txt \
-  -d '{"voteType":"upvote"}'
+  -d '{"voteType": "upvote"}'
+```
 
-Security, performance & scaling notes
-Security
+---
 
-Hash passwords (scrypt configured).
+## 🔒 Security & Performance
 
-Validate inputs with Vine.
+### Security Best Practices
 
-Use CSRF protection for cookie-based sessions (Adonis provides).
+- ✅ Password hashing with scrypt
+- ✅ Input validation with Vine
+- ✅ CSRF protection for cookie sessions
+- ✅ Rate limiting on authentication endpoints
+- ✅ Environment variables never committed
 
-Rate-limit login/throttling endpoints if needed.
+### Performance Optimization
 
-Ensure .env is not committed.
+- ✅ Database indexing on frequently queried columns
+- ✅ Bulk inserts for seeding operations
+- ✅ Redis caching for read-heavy operations
+- ✅ Offloaded cleanup tasks via cron
+- ✅ Read replicas for scaling
 
-Performance
+### Scaling Strategies
 
-Use DB indexing for title, workspace_id, published_at.
+- Stateless application servers behind load balancer
+- Redis-based session store for distributed systems
+- Database read replicas for public endpoints
+- CDN for static frontend assets
 
-Bulk seed via raw multi-row inserts for speed.
+---
 
-Use caching (Redis) and read replicas if you scale reads.
+## 🔧 Troubleshooting
 
-Offload cleanup (history) to cron.
+### Circular Foreign Key Errors
 
-Scaling tips
+**Solution:** Create tables in stages:
+1. Create `companies` without `creator_id` FK
+2. Create `users` table
+3. Add `creator_id` FK in separate migration
 
-Stateless app servers behind a load balancer.
+### Field 'hostname' Doesn't Have Default Value
 
-Session store (if using cookie session) -> consider server-side session store (Redis) for many instances or use token-based auth.
+**Solution:** Include `hostname` in seeder INSERT statements or add default value in migration.
 
-Use read replicas for heavy public listing endpoints.
+### Seeder Reports Success But No Rows
 
-Troubleshooting / FAQ
+**Checklist:**
+- Verify `.env` database credentials
+- Confirm user has INSERT privileges
+- Check you're connected to correct database
 
-Migration errors referencing circular foreign keys (companies ↔ users)
+### Incorrect Datetime Value
 
-Strategy: create one table without the FK, create the other, then add the FK in a second migration. For example:
+**Solution:** Use format `YYYY-MM-DD HH:mm:ss`:
 
-Create companies with creator_id nullable and do NOT add FK.
+```typescript
+DateTime.toFormat('yyyy-LL-dd HH:mm:ss')
+```
 
-Create users table.
+### MySQL Safe Update Mode
 
-Run a new migration that adds companies.creator_id FK referencing users.id.
+**Solution:** Disable in client settings or use explicit WHERE clauses.
 
-Field 'hostname' doesn't have a default value during seeder
+---
 
-Ensure your seeder includes hostname when inserting tags or change the tags migration to provide a default value.
+## 🧪 Development & Testing
 
-Seeder inserted X rows but you don't see rows in DB
+### Recommended Scripts
 
-Confirm .env DB config; you might be connected to a different DB instance.
+**backend/package.json:**
 
-Check for errors printed when the seed ran and check MySQL user privileges.
-
-Incorrect datetime value
-
-Use MySQL DATETIME string format YYYY-MM-DD HH:mm:ss (no timezone appended). In the seeder we use DateTime.toFormat('yyyy-LL-dd HH:mm:ss').
-
-MySQL safe update prevents mass DELETE
-
-Disable safe update mode in your SQL client or use TRUNCATE with SET FOREIGN_KEY_CHECKS = 0; in a controlled manner.
-
-Development tips / CI
-
-Add ESLint/Prettier and enforce in CI.
-
-Add unit tests for services (mock DB) and integration tests for controllers (in-memory SQLite or test DB).
-
-Example npm scripts (backend package.json):
-
-"scripts": {
-  "start": "node ace serve --watch",
-  "migrate": "node ace migration:run",
-  "seed": "node ace db:seed",
-  "seed:small": "SMALL_RUN=true node ace db:seed",
-  "note:cleanup": "node ace note:cleanup"
+```json
+{
+  "scripts": {
+    "start": "node ace serve --watch",
+    "migrate": "node ace migration:run",
+    "seed": "node ace db:seed",
+    "seed:small": "SMALL_RUN=true node ace db:seed",
+    "note:cleanup": "node ace note:cleanup"
+  }
 }
+```
 
+### Testing Strategy
 
-Add GitHub Actions to run npm ci, node ace migration:run --silent, run unit tests.
+- Unit tests for services (mocked database)
+- Integration tests for controllers (test database)
+- ESLint + Prettier for code quality
+- GitHub Actions for CI/CD
 
-Contributing & License
+---
 
-Contributions welcome — open issues & PRs. Please add tests for new behavior.
+## 🤝 Contributing
 
-This project is licensed under MIT.
+Contributions are welcome! Please:
 
-Final notes
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
 
-If you’d like I can:
+Please add tests for new features.
 
-Generate docker-compose.yml (MySQL + Redis + backend + frontend) for local dev.
+---
 
-Add the NoteHistoryCleanup Ace command file content and a sample systemd timer or cron job.
+## 📄 License
 
-Generate full example env files and Procfile for deployment.
+This project is licensed under the **MIT License**.
 
-Tell me which one you want next and I’ll produce the exact file(s) to paste into your repo.
+---
+
 
 
 ---
 
-If you want, I’ll now:
-
-- create `ace-commands/NoteHistoryCleanup.ts` with full code, **and** a `crontab` example;  
-- or produce `docker-compose.yml` for local dev;  
-- or paste a ready-to-paste `README.md` file customized to a Docker environment.
-
-Which one should I produce next?
-
-
-
+**Built with ❤️ using AdonisJS, React, and MySQL**
